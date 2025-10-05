@@ -1,50 +1,81 @@
-# Welcome to your Expo app 👋
+# 📌 Placement Tracker App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+**Placement Tracker** is a personal mobile app for students to organize and monitor placement drives, registration status, rounds, and messages. It helps students stay on top of their placement journey by converting unstructured messages from placement groups into structured data.
 
-## Get started
+---
 
-1. Install dependencies
+## 🚀 Overview
 
-   ```bash
-   npm install
-   ```
+Placement Tracker allows students to:
 
-2. Start the app
+- Quickly view **upcoming drives** for which they are registered.
+- Track **registered vs unregistered drives**.
+- Access **detailed drive information** including rounds, selection status, and raw messages.
+- Get **personal placement analytics** to monitor progress.
 
-   ```bash
-   npx expo start
-   ```
+> Designed for **personal use**; tracks only the individual student's registrations.
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 🛠 Features
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- **Home:** Shows upcoming drives for which the student has registered.  
+- **Registered:** Lists all registered drives (upcoming or finished).  
+- **All Drives:** Displays all drives (registered and unregistered).  
+- **Analytics:** Summary statistics: total drives, registered drives, upcoming rounds, selections.  
+- **Add Message:**  
+  - Paste raw messages to parse and store drive information.  
+  - You can select an **existing drive** and provide a new message; the app will automatically **add new rounds** or **update drive details**.  
+- **Drive Details:**  
+  - Detailed view with rounds, notes, and raw messages.  
+  - You can **manually add rounds** and update selection status or other details.  
+- **Fallback & Offline Handling:**  
+  - If network issues or AI parsing errors occur, raw messages are stored locally in SQLite.  
+  - Once the network is restored or parsing is successful, the data is automatically updated.  
+  - Ensures no data loss and smooth offline usage.  
 
-## Get a fresh project
+---
 
-When you're ready, run:
+## 💻 Tech Stack
 
+- **Framework:** React Native with Expo  
+- **Database:** SQLite (local storage)  
+- **Navigation:** React Navigation (Bottom Tabs + Stack)  
+- **UI:** React Native components + custom styles  
+- **Icons:** Ionicons  
+
+---
+
+## ⚡ Installation
+
+1. **Clone the repository:**
 ```bash
-npm run reset-project
+git clone https://github.com/karthikeya1104/placement-tracker
+cd PlacementTracker
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. **Install dependencies:**
+```bash
+npm install
+```
 
-## Learn more
+3. **Start the app:**
+```bash
+npx expo start
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+---
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## 📝 Usage
 
-## Join the community
+1. Open the app.
+2. Navigate between tabs to explore **Home**, **Registered**, **All Drives**, and **Analytics**.
+3. Add raw messages in the **Add Message** tab; the app will parse and store them.
+4. Tap **View Details** on a drive to see rounds, notes, and raw messages.
+5. Edit selection status or other details from the **Drive Details** screen.
 
-Join our community of developers creating universal apps.
+---
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 👨‍💻 Author
+
+**Karthikeya Goud Nagelli**

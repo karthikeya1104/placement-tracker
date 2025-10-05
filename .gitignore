@@ -1,43 +1,95 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
+# ======================
+# 📦 Dependencies
+# ======================
 node_modules/
+package-lock.json
+yarn.lock
 
-# Expo
+# ======================
+# 🧩 IDE & Editor
+# ======================
+.vscode/
+.idea/
+*.swp
+
+# ======================
+# ⚙️ Expo & EAS
+# ======================
 .expo/
+.expo-shared/
+.expo-env.d.ts
 dist/
 web-build/
-expo-env.d.ts
+eas.json
 
-# Native
-.kotlin/
+# ======================
+# 📱 Native (generated)
+# ======================
+/ios/
+/android/
+/web/
+/build/
+.gradle/
+/Pods/
+*.xcworkspace
+*.xcuserstate
 *.orig.*
+
+# ======================
+# 🔐 Keys & Certificates
+# ======================
 *.jks
+*.keystore
 *.p8
 *.p12
 *.key
+*.pem
 *.mobileprovision
 
-# Metro
+# ======================
+# 🧠 Metro Bundler
+# ======================
 .metro-health-check*
+.cache/
+babel.config.js.map
 
-# debug
+# ======================
+# 🧰 Debug & Logs
+# ======================
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+expo-error.log
+*.log
 
-# macOS
+# ======================
+# 🍎 macOS / OS Files
+# ======================
 .DS_Store
-*.pem
+Thumbs.db
 
-# local env files
+# ======================
+# 🔧 Environment Files
+# ======================
+.env
 .env*.local
 
-# typescript
+# ======================
+# 🧱 TypeScript
+# ======================
 *.tsbuildinfo
 
-app-example
+# ======================
+# 🧪 Example / Test Data
+# ======================
+app-example/
+__tests__/
+coverage/
 
-# generated native folders
-/ios
-/android
+# ======================
+# 🚫 Misc
+# ======================
+*.tmp
+*.bak
+*.orig
+*.rej

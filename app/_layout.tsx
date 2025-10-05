@@ -1,24 +1,40 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+// app/_layout.tsx
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { DrivesProvider } from '../context/DrivesContext';
+import BottomTabs from '../navigation/BottomTabs';
+import SetupApiKeyScreen from '../screens/SetupApiKeyScreen';
+import { ApiKeyService } from '../services/ApiKeyService';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
+export default function Layout() {
+  const [loading, setLoading] = useState(true);
+  const [hasKey, setHasKey] = useState(false);
 
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+  useEffect(() => {
+    const checkKey = async () => {
+      const key = await ApiKeyService.getKey();
+      setHasKey(!!key);
+      setLoading(false);
+    };
+    checkKey();
+  }, []);
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <DrivesProvider>
+      {hasKey ? (
+        <BottomTabs />
+      ) : (
+        <SetupApiKeyScreen onKeySaved={() => setHasKey(true)} />
+      )}
+    </DrivesProvider>
   );
 }
