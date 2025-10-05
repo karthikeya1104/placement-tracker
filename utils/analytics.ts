@@ -1,47 +1,40 @@
 // utils/analytics.ts
 export function prepareDriveAnalytics(drives) {
-  // Summary metrics
-  const totalDrives = drives.length;
-  const upcomingDrives = drives.filter(d => d.status === 'upcoming').length;
-  const finishedDrives = drives.filter(d => d.status === 'finished').length;
-  const registeredDrives = drives.filter(d => d.registration_status === 'registered').length;
-  const selectedDrives = drives.filter(d => d.selected).length;
+  // Filter only registered drives
+  const registeredDrives = drives.filter(d => d.registration_status === 'registered');
 
-  // Success rate for finished drives
-  const finishedRegistered = drives.filter(d => d.status === 'finished' && d.registration_status === 'registered').length;
-  const finishedSelected = drives.filter(d => d.status === 'finished' && d.selected).length;
-  const finishedNotSelected = finishedRegistered - finishedSelected;
-
-  // Drives over time
-  const drivesByDate: Record<string, { upcoming: number; finished: number; registered: number; selected: number }> = {};
-  drives.forEach(d => {
-    const date = d.created_at.split('T')[0];
-    if (!drivesByDate[date]) drivesByDate[date] = { upcoming: 0, finished: 0, registered: 0, selected: 0 };
-    drivesByDate[date].upcoming += d.status === 'upcoming' ? 1 : 0;
-    drivesByDate[date].finished += d.status === 'finished' ? 1 : 0;
-    drivesByDate[date].registered += d.registration_status === 'registered' ? 1 : 0;
-    drivesByDate[date].selected += d.selected ? 1 : 0;
+  // Pie chart data: status distribution (using last update for finished)
+  const statusCounts = { upcoming: 0, ongoing: 0, finished: 0 };
+  registeredDrives.forEach(d => {
+    if (d.status === 'upcoming') statusCounts.upcoming += 1;
+    else if (d.status === 'ongoing') statusCounts.ongoing += 1;
+    else if (d.status === 'finished' || d.status === 'ongoing' && new Date(d.updated_at) > new Date(d.created_at)) {
+      // Treat updated drives as finished
+      statusCounts.finished += 1;
+    }
   });
 
-  const sortedDates = Object.keys(drivesByDate).sort();
+  // Timeline data: when added vs finished
+  const timelineData: Record<string, { added: number; finished: number }> = {};
+  registeredDrives.forEach(d => {
+    const createdDate = d.created_at.split('T')[0];
+    if (!timelineData[createdDate]) timelineData[createdDate] = { added: 0, finished: 0 };
+    timelineData[createdDate].added += 1;
+
+    // Finished drives determined by updated_at > created_at
+    if (new Date(d.updated_at) > new Date(d.created_at)) {
+      const finishedDate = d.updated_at.split('T')[0];
+      if (!timelineData[finishedDate]) timelineData[finishedDate] = { added: 0, finished: 0 };
+      timelineData[finishedDate].finished += 1;
+    }
+  });
+
+  const sortedDates = Object.keys(timelineData).sort();
   const lineChartData = {
     labels: sortedDates,
-    upcoming: sortedDates.map(d => drivesByDate[d].upcoming),
-    finished: sortedDates.map(d => drivesByDate[d].finished),
-    registered: sortedDates.map(d => drivesByDate[d].registered),
-    selected: sortedDates.map(d => drivesByDate[d].selected),
+    added: sortedDates.map(d => timelineData[d].added),
+    finished: sortedDates.map(d => timelineData[d].finished),
   };
 
-  return {
-    summary: {
-      totalDrives,
-      upcomingDrives,
-      finishedDrives,
-      registeredDrives,
-      selectedDrives,
-      finishedSelected,
-      finishedNotSelected,
-    },
-    lineChartData,
-  };
+  return { statusCounts, lineChartData };
 }

@@ -133,10 +133,11 @@ export const insertRound = async (round: any): Promise<number | null> => {
   try {
     const db = getDB();
     const result = await db.runAsync(
-      `INSERT INTO rounds (drive_id, round_name, round_date, status, result)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO rounds (drive_id, round_number, round_name, round_date, status, result)
+       VALUES (?, ?, ?, ?, ?, ?)`,
       [
         round.drive_id,
+        round.round_number || 1, 
         round.round_name || 'Unnamed Round',
         round.round_date || '',
         round.status || 'upcoming',
@@ -154,11 +155,12 @@ export const getRoundsByDrive = async (drive_id: number): Promise<any[]> => {
   try {
     const db = getDB();
     const rows = await db.getAllAsync(
-      'SELECT * FROM rounds WHERE drive_id = ? ORDER BY round_date ASC',
+      'SELECT * FROM rounds WHERE drive_id = ? ORDER BY round_number ASC',
       [drive_id]
     );
     return rows.map(row => ({
       ...row,
+      round_number: row.round_number || 1,
       round_name: row.round_name || 'Unnamed Round',
       round_date: row.round_date || '',
       status: row.status || 'upcoming',

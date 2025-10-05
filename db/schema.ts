@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS drives (
   role TEXT,
   location TEXT,
   ctc_stipend TEXT,
-  status TEXT,               -- upcoming / finished
+  status TEXT,               -- upcoming / ongoing / finished
   registration_status TEXT,  -- registered / not_registered
   selected INTEGER,          -- 1 for selected, 0 for not
   skills_notes TEXT,
@@ -22,6 +22,7 @@ export const createRoundsTable = `
 CREATE TABLE IF NOT EXISTS rounds (
   id INTEGER PRIMARY KEY NOT NULL,
   drive_id INTEGER,
+  round_number INTEGER,      -- 1 for first round, 2 for second, etc.
   round_name TEXT,           -- OA / Technical / HR / etc.
   round_date TEXT,
   status TEXT,               -- upcoming / finished

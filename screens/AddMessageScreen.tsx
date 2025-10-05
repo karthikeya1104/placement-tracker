@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   TextInput,
-  Button,
   Alert,
   StyleSheet,
   ScrollView,
@@ -92,32 +91,40 @@ export default function AddMessageScreen() {
         {mode === 'update' && (
           <View style={styles.pickerWrapper}>
             <Text style={styles.label}>Select Drive:</Text>
-            <Picker
-              selectedValue={selectedDrive}
-              onValueChange={setSelectedDrive}
-            >
-              <Picker.Item label="-- Select Drive --" value={null} />
-              {activeDrives.map((drive: Drive) => (
-                <Picker.Item
-                  key={drive.id}
-                  label={`${drive.company_name || 'Unknown'} (${drive.role || 'Role N/A'})`}
-                  value={drive.id}
-                />
-              ))}
-            </Picker>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={selectedDrive}
+                onValueChange={setSelectedDrive}
+                style={styles.picker}
+                dropdownIconColor="#007bff"
+              >
+                <Picker.Item label="-- Select Drive --" value={null} />
+                {activeDrives.map((drive: Drive) => (
+                  <Picker.Item
+                    key={drive.id}
+                    label={`${drive.company_name || 'Unknown'} (${drive.role || 'Role N/A'})`}
+                    value={drive.id}
+                  />
+                ))}
+              </Picker>
+            </View>
           </View>
         )}
 
         {mode === 'new' && (
           <View style={styles.pickerWrapper}>
             <Text style={styles.label}>Registration Status:</Text>
-            <Picker
-              selectedValue={registrationStatus}
-              onValueChange={setRegistrationStatus}
-            >
-              <Picker.Item label="Registered" value="registered" />
-              <Picker.Item label="Not Registered" value="not_registered" />
-            </Picker>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={registrationStatus}
+                onValueChange={setRegistrationStatus}
+                style={styles.picker}
+                dropdownIconColor="#007bff"
+              >
+                <Picker.Item label="Registered" value="registered" />
+                <Picker.Item label="Not Registered" value="not_registered" />
+              </Picker>
+            </View>
           </View>
         )}
 
@@ -151,7 +158,7 @@ const styles = StyleSheet.create({
   toggleContainer: { flexDirection: 'row', marginBottom: 12 },
   toggleButton: {
     flex: 1,
-    padding: 10,
+    padding: 8,
     borderWidth: 1,
     borderColor: '#ccc',
     alignItems: 'center',
@@ -170,7 +177,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
   },
-  pickerWrapper: { marginBottom: 16, backgroundColor: '#fff', borderRadius: 6 },
+  pickerWrapper: { marginBottom: 16 },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    backgroundColor: '#fff',
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  picker: {
+    height: 55,
+    color: '#000',
+    paddingHorizontal: 8,
+  },
   saveButton: {
     backgroundColor: '#007bff',
     paddingVertical: 12,

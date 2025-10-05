@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, TextInput, Button, StyleSheet } from "react-native";
+import { View, TextInput, Button, StyleSheet, Text } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { DEFAULT_ROUND } from "../utils/utils";
 
@@ -32,6 +32,9 @@ export default function DriveRounds({
 }: Props) {
   const [editingRoundCopy, setEditingRoundCopy] = useState<any>(null);
 
+  // Sort rounds by round_number ascending
+  const sortedRounds = [...editableRounds].sort((a, b) => (a.round_number || 0) - (b.round_number || 0));
+
   const startEditing = (round: any) => {
     setEditingRoundCopy({ ...round });
     setEditingRoundId(round.id);
@@ -45,12 +48,13 @@ export default function DriveRounds({
   const saveEditing = () => {
     if (!editingRoundCopy) return;
 
-    // Update local state immediately
+    // Ensure round_number is a number
+    editingRoundCopy.round_number = Number(editingRoundCopy.round_number) || 0;
+
     setEditableRounds(prev =>
       prev.map(r => (r.id === editingRoundCopy.id ? { ...editingRoundCopy } : r))
     );
 
-    // Persist to backend
     handleSaveRound(editingRoundCopy);
 
     setEditingRoundCopy(null);
@@ -67,6 +71,13 @@ export default function DriveRounds({
 
       {newRound && (
         <View style={styles.roundCard}>
+          <TextInput
+            style={styles.input}
+            value={String(newRound.round_number || sortedRounds.length + 1)}
+            placeholder="Round Number"
+            keyboardType="numeric"
+            onChangeText={(t) => setNewRound({ ...newRound, round_number: Number(t) || 0 })}
+          />
           <TextInput
             style={styles.input}
             value={newRound.round_name || ""}
@@ -103,10 +114,17 @@ export default function DriveRounds({
         </View>
       )}
 
-      {editableRounds.map((round) => (
+      {sortedRounds.map((round) => (
         <View key={round.id} style={styles.roundCard}>
           {editingRoundId === round.id && editingRoundCopy ? (
             <>
+              <TextInput
+                style={styles.input}
+                value={String(editingRoundCopy.round_number || 0)}
+                placeholder="Round Number"
+                keyboardType="numeric"
+                onChangeText={(t) => setEditingRoundCopy({ ...editingRoundCopy, round_number: Number(t) || 0 })}
+              />
               <TextInput
                 style={styles.input}
                 value={editingRoundCopy.round_name}
@@ -141,6 +159,17 @@ export default function DriveRounds({
             </>
           ) : (
             <>
+              <TextInput
+                style={[styles.input, { backgroundColor: "#f0f0f0" }]}
+                value={String(round.round_number || DEFAULT_ROUND.round_number)}
+                editable={true}
+                keyboardType="numeric"
+                onChangeText={(t) =>
+                  setEditableRounds(prev =>
+                    prev.map(r => (r.id === round.id ? { ...r, round_number: Number(t) || 0 } : r))
+                  )
+                }
+              />
               <TextInput
                 style={[styles.input, { backgroundColor: "#f0f0f0" }]}
                 value={round.round_name || DEFAULT_ROUND.round_name}
