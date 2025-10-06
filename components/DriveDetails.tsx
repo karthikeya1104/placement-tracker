@@ -1,7 +1,8 @@
 import React from "react";
-import { View, Text, TextInput, Button, StyleSheet, ScrollView } from "react-native";
+import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { formatDate, DEFAULT_DRIVE_FIELD } from "../utils/utils";
+import { useThemeContext } from "../context/ThemeContext";
 
 interface Props {
   editableDrive: any;
@@ -37,6 +38,16 @@ export default function DriveDetails({
   handleCancelDrive,
   handleDeleteDrive,
 }: Props) {
+  const { mode } = useThemeContext();
+
+  // Dynamic colors based on theme
+  const cardBg = mode === "dark" ? "#2c2c2c" : "#fff";
+  const textColor = mode === "dark" ? "#fff" : "#222";
+  const subTextColor = mode === "dark" ? "#ccc" : "#555";
+  const inputBg = mode === "dark" ? "#3a3a3a" : "#e0e0e0"; // light gray in light mode
+  const inputBorder = mode === "dark" ? "#555" : "#ccc";
+  const pickerBg = mode === "dark" ? "#3a3a3a" : "#fafafa";
+
   const restoreOriginal = () => {
     setEditableDrive({ ...originalDrive });
     setIsEditing(false);
@@ -49,9 +60,9 @@ export default function DriveDetails({
       if (key === "created_at" || key === "updated_at") {
         return (
           <View key={key} style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>{label}:</Text>
+            <Text style={[styles.fieldLabel, { color: subTextColor }]}>{label}:</Text>
             <TextInput
-              style={[styles.input, { backgroundColor: "#f0f0f0" }]}
+              style={[styles.input, { backgroundColor: inputBg, color: textColor, borderColor: inputBorder }]}
               editable={false}
               value={formatDate(value)}
             />
@@ -78,18 +89,20 @@ export default function DriveDetails({
             { label: "No", value: "No" },
           ];
 
-        // normalize backend value for dropdowns
-        const selectedValue = key === "selected"
-          ? value === 1 || value === "1" || value === "Yes" ? "Yes" : "No"
-          : value ?? options[0].value;
+        const selectedValue =
+          key === "selected"
+            ? value === 1 || value === "1" || value === "Yes"
+              ? "Yes"
+              : "No"
+            : value ?? options[0].value;
 
         return (
           <View key={key} style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>{label}:</Text>
+            <Text style={[styles.fieldLabel, { color: subTextColor }]}>{label}:</Text>
             <Picker
               selectedValue={selectedValue}
               onValueChange={(v) => setEditableDrive({ ...editableDrive, [key]: v })}
-              style={styles.picker}
+              style={[styles.picker, { backgroundColor: pickerBg, color: textColor }]}
             >
               {options.map((o) => (
                 <Picker.Item key={o.value} label={o.label} value={o.value} />
@@ -101,12 +114,12 @@ export default function DriveDetails({
 
       return (
         <View key={key} style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>{label}:</Text>
+          <Text style={[styles.fieldLabel, { color: subTextColor }]}>{label}:</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: inputBg, color: textColor, borderColor: inputBorder }]}
             value={editableDrive[key] ? String(editableDrive[key]) : ""}
             onChangeText={(text) => setEditableDrive({ ...editableDrive, [key]: text })}
-            multiline={true}
+            multiline
             textAlignVertical="top"
           />
         </View>
@@ -121,12 +134,12 @@ export default function DriveDetails({
 
     return (
       <View key={key} style={styles.fieldRow}>
-        <Text style={styles.fieldLabel}>{label}:</Text>
+        <Text style={[styles.fieldLabel, { color: subTextColor }]}>{label}:</Text>
         <TextInput
-          style={[styles.input, { backgroundColor: "#f0f0f0" }]}
+          style={[styles.input, { backgroundColor: inputBg, color: textColor, borderColor: inputBorder }]}
           editable={false}
           value={displayValue}
-          multiline={true}
+          multiline
           textAlignVertical="top"
         />
       </View>
@@ -134,55 +147,50 @@ export default function DriveDetails({
   };
 
   return (
-    <ScrollView style={{ flex: 1 }}>
-      <Text style={styles.title}>{editableDrive.company_name || DEFAULT_DRIVE_FIELD}</Text>
-      <Text style={styles.subTitle}>{editableDrive.role || DEFAULT_DRIVE_FIELD}</Text>
+    <ScrollView contentContainerStyle={{ padding: 0 }}>
+      <Text style={[styles.title, { color: textColor }]}>{editableDrive.company_name || DEFAULT_DRIVE_FIELD}</Text>
+      <Text style={[styles.subTitle, { color: subTextColor }]}>{editableDrive.role || DEFAULT_DRIVE_FIELD}</Text>
 
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: cardBg }]}>
         {Object.entries(editableDrive)
-          .filter(([, value]) => true)
-          .map(([key, value]) => {
-            if (["id", "rounds", "raw_messages", "queued_for_retry", "parse_status"].includes(key))
-              return null;
-            return renderField(key, value);
-          })}
+          .filter(([key]) => !["id", "rounds", "raw_messages", "queued_for_retry", "parse_status"].includes(key))
+          .map(([key, value]) => renderField(key, value))}
       </View>
 
       <View style={styles.buttonRow}>
         {isEditing ? (
           <>
-            <Button title="Save" onPress={handleSaveDrive} />
-            <Button title="Cancel" color="gray" onPress={restoreOriginal} />
+            <TouchableOpacity style={[styles.curvedButton, { backgroundColor: "#6200ee" }]} onPress={handleSaveDrive}>
+              <Text style={styles.curvedButtonText}>Save</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.curvedButton, { backgroundColor: "#888" }]} onPress={restoreOriginal}>
+              <Text style={styles.curvedButtonText}>Cancel</Text>
+            </TouchableOpacity>
           </>
         ) : (
-          <Button title="Edit Details" onPress={() => setIsEditing(true)} />
+          <TouchableOpacity style={[styles.curvedButton, { backgroundColor: "#6200ee" }]} onPress={() => setIsEditing(true)}>
+            <Text style={styles.curvedButtonText}>Edit Details</Text>
+          </TouchableOpacity>
         )}
       </View>
 
-      <View style={{ marginTop: 16 }}>
-        <Button title="Delete Drive" color="red" onPress={handleDeleteDrive} />
-      </View>
+      <TouchableOpacity style={[styles.curvedButton, { backgroundColor: "red", marginTop: 16 }]} onPress={handleDeleteDrive}>
+        <Text style={styles.curvedButtonText}>Delete Drive</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: 22, fontWeight: "bold", marginBottom: 4, color: "#222" },
-  subTitle: { fontSize: 18, fontWeight: "600", marginBottom: 12, color: "#555" },
-  card: { backgroundColor: "#fff", padding: 16, borderRadius: 8, marginBottom: 16, elevation: 2 },
+  title: { fontSize: 22, fontWeight: "bold", marginBottom: 4 },
+  subTitle: { fontSize: 18, fontWeight: "600", marginBottom: 12 },
+  card: { padding: 16, borderRadius: 12, marginBottom: 16, elevation: 2 },
   fieldRow: { marginBottom: 12 },
-  fieldLabel: { fontWeight: "600", fontSize: 16, color: "#333", marginBottom: 4 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
-    padding: 12,
-    backgroundColor: "#fff",
-    marginBottom: 8,
-    fontSize: 16,
-    color: "#222",
-    minHeight: 40, // ensures single-line fields still have some height
-  },
-  picker: { backgroundColor: "#fafafa", borderRadius: 6, marginBottom: 8 },
+  fieldLabel: { fontWeight: "600", fontSize: 16, marginBottom: 4 },
+  input: { borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 8, fontSize: 16, minHeight: 40 },
+  picker: { borderRadius: 8, marginBottom: 8 },
   buttonRow: { flexDirection: "row", justifyContent: "space-evenly", marginVertical: 8 },
+  curvedButton: { flex: 1, paddingVertical: 12, marginHorizontal: 5, borderRadius: 25, alignItems: "center" },
+  curvedButtonText: { color: "#fff", fontWeight: "600", fontSize: 16 },
 });

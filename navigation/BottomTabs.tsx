@@ -1,4 +1,5 @@
 import React from 'react';
+import { TouchableOpacity } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,54 +10,114 @@ import AllDrivesScreen from '../screens/AllDrivesScreen';
 import DriveDetailScreen from '../screens/DriveDetailScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
 import AddMessageScreen from '../screens/AddMessageScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+import SetupApiKeyScreen from '../screens/SetupApiKeyScreen';
 
-// Stack param list for screens that navigate to DriveDetail
+import { useThemeContext } from '../context/ThemeContext';
+
+// Stack param list for drives
 type DriveStackParamList = {
   List: undefined;
   DriveDetail: { drive: any };
+  Settings: undefined;
+  SetupApiKey: undefined;
 };
 
 // Generic stack for tabs that list drives
 function createDriveStack(initialScreen: React.ComponentType<any>, title: string) {
   const Stack = createNativeStackNavigator<DriveStackParamList>();
   return function DriveStack() {
+    const { mode } = useThemeContext();
+
     return (
       <Stack.Navigator
-        screenOptions={{
-          headerStyle: { backgroundColor: '#007AFF' },
+        screenOptions={({ navigation }) => ({
+          headerStyle: { backgroundColor: mode === 'dark' ? '#000' : '#007AFF' },
           headerTintColor: '#fff',
           headerTitleStyle: { fontWeight: 'bold' },
-        }}
+          headerRight: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Settings')}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="settings-outline" size={22} color="#fff" />
+            </TouchableOpacity>
+          ),
+        })}
       >
-        <Stack.Screen name="List" component={initialScreen} options={{ title }} />
-        <Stack.Screen name="DriveDetail" component={DriveDetailScreen} options={{ title: 'Drive Details' }} />
+        <Stack.Screen
+          name="List"
+          component={initialScreen}
+          options={{ title }}
+        />
+        <Stack.Screen
+          name="DriveDetail"
+          component={DriveDetailScreen}
+          options={{ title: 'Drive Details' }}
+        />
+        <Stack.Screen
+          name="Settings"
+          component={SettingsScreen}
+          options={{ title: 'Settings' }}
+        />
+        <Stack.Screen
+          name="SetupApiKey"
+          component={SetupApiKeyScreen}
+          options={{ title: 'API Key', presentation: 'modal' }} // modal for smooth UX
+        />
       </Stack.Navigator>
     );
   };
 }
 
-// Simple stack wrapper for single screens
+// Single screen stack wrapper
 function createSingleScreenStack(Screen: React.ComponentType<any>, title: string) {
   const Stack = createNativeStackNavigator();
   return function SingleScreenStack() {
+    const { mode } = useThemeContext();
+
     return (
       <Stack.Navigator
-        screenOptions={{
-          headerStyle: { backgroundColor: '#007AFF' },
+        screenOptions={({ navigation }) => ({
+          headerStyle: { backgroundColor: mode === 'dark' ? '#000' : '#007AFF' },
           headerTintColor: '#fff',
           headerTitleStyle: { fontWeight: 'bold' },
-        }}
+          headerRight: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Settings')}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="settings-outline" size={22} color="#fff" />
+            </TouchableOpacity>
+          ),
+        })}
       >
-        <Stack.Screen name={title} component={Screen} options={{ title }} />
+        <Stack.Screen
+          name={title}
+          component={Screen}
+          options={{ title }}
+        />
+        <Stack.Screen
+          name="Settings"
+          component={SettingsScreen}
+          options={{ title: 'Settings' }}
+        />
+        <Stack.Screen
+          name="SetupApiKey"
+          component={SetupApiKeyScreen}
+          options={{ title: 'API Key', presentation: 'modal' }}
+        />
       </Stack.Navigator>
     );
   };
 }
 
-// Do NOT include NavigationContainer here
+// Bottom tabs
 const Tab = createBottomTabNavigator();
 
 export default function BottomTabs() {
+  const { mode } = useThemeContext();
+
   return (
     <Tab.Navigator
       initialRouteName="HomeTab"
@@ -75,14 +136,32 @@ export default function BottomTabs() {
           return <Ionicons name={iconName as any} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: 'gray',
+        tabBarInactiveTintColor: mode === 'dark' ? '#aaa' : 'gray',
+        tabBarStyle: {
+          backgroundColor: mode === 'dark' ? '#121212' : '#fff',
+        },
       })}
     >
-      <Tab.Screen name="HomeTab" component={createDriveStack(HomeScreen, 'Home')} />
-      <Tab.Screen name="RegisteredTab" component={createDriveStack(RegisteredScreen, 'Registered')} />
-      <Tab.Screen name="AddMessageTab" component={createSingleScreenStack(AddMessageScreen, 'Add Message')} />
-      <Tab.Screen name="AllDrives" component={createDriveStack(AllDrivesScreen, 'All Drives')} />
-      <Tab.Screen name="AnalyticsTab" component={createSingleScreenStack(AnalyticsScreen, 'Analytics')} />
+      <Tab.Screen
+        name="HomeTab"
+        component={createDriveStack(HomeScreen, 'Home')}
+      />
+      <Tab.Screen
+        name="RegisteredTab"
+        component={createDriveStack(RegisteredScreen, 'Registered')}
+      />
+      <Tab.Screen
+        name="AddMessageTab"
+        component={createSingleScreenStack(AddMessageScreen, 'Add Message')}
+      />
+      <Tab.Screen
+        name="AllDrives"
+        component={createDriveStack(AllDrivesScreen, 'All Drives')}
+      />
+      <Tab.Screen
+        name="AnalyticsTab"
+        component={createSingleScreenStack(AnalyticsScreen, 'Analytics')}
+      />
     </Tab.Navigator>
   );
 }

@@ -2,14 +2,22 @@ import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Linking, Platform, Animated } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
+import { useThemeContext } from "../context/ThemeContext";
 
 interface Props {
   rawMessages?: string[] | string;
 }
 
 export default function DriveMessages({ rawMessages }: Props) {
+  const { mode } = useThemeContext();
   const [copiedMsg, setCopiedMsg] = useState<string | null>(null);
   const [fadeAnim] = useState(new Animated.Value(0));
+
+  const bgColor = mode === "dark" ? "#1e1e1e" : "#eee";
+  const textColor = mode === "dark" ? "#fff" : "#000";
+  const linkColor = mode === "dark" ? "#4eaaff" : "blue";
+  const toastBg = mode === "dark" ? "#222" : "#333";
+  const toastTextColor = "#fff";
 
   let messages: string[] = [];
 
@@ -53,36 +61,36 @@ export default function DriveMessages({ rawMessages }: Props) {
 
     return parts.map((part, idx) =>
       urlRegex.test(part) ? (
-        <Text key={idx} style={styles.link} onPress={() => Linking.openURL(part)}>
+        <Text key={idx} style={[styles.link, { color: linkColor }]} onPress={() => Linking.openURL(part)}>
           {part}
         </Text>
       ) : (
-        <Text key={idx}>{part}</Text>
+        <Text key={idx} style={{ color: textColor }}>{part}</Text>
       )
     );
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, padding: 8 }}>
       {messages.length > 0 ? (
         messages.map((msg, idx) => (
-          <View key={idx} style={styles.rawMessage}>
+          <View key={idx} style={[styles.rawMessage, { backgroundColor: bgColor }]}>
             <View style={styles.headerRow}>
               <View style={styles.spacer} />
               <TouchableOpacity onPress={() => copyToClipboard(msg)}>
-                <MaterialIcons name="content-copy" size={20} color="#555" />
+                <MaterialIcons name="content-copy" size={20} color={textColor} />
               </TouchableOpacity>
             </View>
             <Text style={styles.messageText}>{renderMessageText(msg)}</Text>
           </View>
         ))
       ) : (
-        <Text>No raw messages available.</Text>
+        <Text style={{ color: textColor }}>No raw messages available.</Text>
       )}
 
       {copiedMsg && (
-        <Animated.View style={[styles.toast, { opacity: fadeAnim }]}>
-          <Text style={styles.toastText}>{copiedMsg}</Text>
+        <Animated.View style={[styles.toast, { opacity: fadeAnim, backgroundColor: toastBg }]}>
+          <Text style={[styles.toastText, { color: toastTextColor }]}>{copiedMsg}</Text>
         </Animated.View>
       )}
     </View>
@@ -91,7 +99,6 @@ export default function DriveMessages({ rawMessages }: Props) {
 
 const styles = StyleSheet.create({
   rawMessage: {
-    backgroundColor: "#eee",
     padding: 10,
     marginBottom: 8,
     borderRadius: 8,
@@ -108,19 +115,17 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   link: {
-    color: "blue",
     textDecorationLine: "underline",
   },
   toast: {
     position: "absolute",
     bottom: 40,
     alignSelf: "center",
-    backgroundColor: "#333",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
   },
   toastText: {
-    color: "#fff",
+    fontWeight: "600",
   },
 });

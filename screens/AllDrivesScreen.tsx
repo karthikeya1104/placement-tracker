@@ -2,14 +2,28 @@ import React from 'react';
 import { View, FlatList, Text, StyleSheet } from 'react-native';
 import DriveCard from '../components/DriveCard';
 import { useDrives } from '../context/DrivesContext';
+import { useThemeContext } from '../context/ThemeContext';
 
 export default function AllDrivesScreen() {
   const { drives } = useDrives();
+  const { mode } = useThemeContext();
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: mode === 'dark' ? '#121212' : '#fff' },
+      ]}
+    >
       {drives.length === 0 ? (
-        <Text style={styles.empty}>No drives found.</Text>
+        <Text
+          style={[
+            styles.empty,
+            { color: mode === 'dark' ? '#fff' : '#333' },
+          ]}
+        >
+          No drives found.
+        </Text>
       ) : (
         <FlatList
           data={drives}

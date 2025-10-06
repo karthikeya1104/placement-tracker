@@ -6,10 +6,12 @@ import DriveDetails from "../components/DriveDetails";
 import DriveRounds from "../components/DriveRounds";
 import DriveMessages from "../components/DriveMessages";
 import { DEFAULT_DRIVE_FIELD, DEFAULT_ROUND } from "../utils/utils";
+import { useThemeContext } from "../context/ThemeContext";
 
 export default function DriveDetailScreen({ route, navigation }: any) {
   const { drive } = route.params;
   const { drives, updateDriveInState, addRoundToDrive, updateRoundInDrive, removeRoundFromDrive, deleteDriveInState } = useDrives();
+  const { mode } = useThemeContext();
 
   const [activeTab, setActiveTab] = useState<"details" | "rounds" | "messages">("details");
   const [isEditing, setIsEditing] = useState(false);
@@ -142,9 +144,9 @@ export default function DriveDetailScreen({ route, navigation }: any) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: mode === "dark" ? "#121212" : "#f5f5f5" }]}>
       <DriveTabs activeTab={activeTab} setActiveTab={setActiveTab} />
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView contentContainerStyle={[styles.scroll, { backgroundColor: mode === "dark" ? "#121212" : "#f5f5f5" }]}>
         {activeTab === "details" && (
           <DriveDetails
             editableDrive={editableDrive}
@@ -155,6 +157,7 @@ export default function DriveDetailScreen({ route, navigation }: any) {
             handleSaveDrive={handleSaveDrive}
             handleCancelDrive={handleCancelDrive}
             handleDeleteDrive={handleDeleteDrive}
+            darkMode={mode === "dark"} // optionally pass to child components
           />
         )}
 
@@ -171,16 +174,17 @@ export default function DriveDetailScreen({ route, navigation }: any) {
             handleCancelNewRound={handleCancelNewRound}
             handleSaveRound={handleSaveRound}
             handleDeleteRound={handleDeleteRound}
+            darkMode={mode === "dark"}
           />
         )}
 
-        {activeTab === "messages" && <DriveMessages rawMessages={drive.raw_messages} />}
+        {activeTab === "messages" && <DriveMessages rawMessages={drive.raw_messages} darkMode={mode === "dark"} />}
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f5f5" },
+  container: { flex: 1 },
   scroll: { padding: 16 },
 });

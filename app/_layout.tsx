@@ -1,40 +1,33 @@
 // app/_layout.tsx
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import React from 'react';
+import { StatusBar } from 'react-native';
 import { DrivesProvider } from '../context/DrivesContext';
 import BottomTabs from '../navigation/BottomTabs';
-import SetupApiKeyScreen from '../screens/SetupApiKeyScreen';
-import { ApiKeyService } from '../services/ApiKeyService';
+import { ThemeProvider, useThemeContext } from '../context/ThemeContext';
 
-export default function Layout() {
-  const [loading, setLoading] = useState(true);
-  const [hasKey, setHasKey] = useState(false);
-
-  useEffect(() => {
-    const checkKey = async () => {
-      const key = await ApiKeyService.getKey();
-      setHasKey(!!key);
-      setLoading(false);
-    };
-    checkKey();
-  }, []);
-
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator />
-      </View>
-    );
-  }
+// Wrapper component to handle StatusBar based on theme
+function ThemeStatusWrapper({ children }: { children: React.ReactNode }) {
+  const { mode } = useThemeContext();
 
   return (
-    <DrivesProvider>
-      {hasKey ? (
-        <BottomTabs />
-      ) : (
-        <SetupApiKeyScreen onKeySaved={() => setHasKey(true)} />
-      )}
-    </DrivesProvider>
+    <>
+      <StatusBar
+        barStyle={mode === 'dark' ? 'light-content' : 'dark-content'}
+        backgroundColor={mode === 'dark' ? '#1e1e1e' : '#fff'}
+      />
+      {children}
+    </>
+  );
+}
+
+export default function Layout() {
+  return (
+    <ThemeProvider>
+      <DrivesProvider>
+        <ThemeStatusWrapper>
+          <BottomTabs />
+        </ThemeStatusWrapper>
+      </DrivesProvider>
+    </ThemeProvider>
   );
 }

@@ -2,15 +2,25 @@ import React from 'react';
 import { View, FlatList, Text, StyleSheet } from 'react-native';
 import DriveCard from '../components/DriveCard';
 import { useDrives } from '../context/DrivesContext';
+import { useThemeContext } from '../context/ThemeContext';
 
 export default function RegisteredScreen() {
   const { drives } = useDrives();
+  const { mode } = useThemeContext();
+
   const registered = drives.filter(d => d.registration_status === 'registered');
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: mode === 'dark' ? '#121212' : '#fff' },
+      ]}
+    >
       {registered.length === 0 ? (
-        <Text style={styles.empty}>No registered drives.</Text>
+        <Text style={[styles.empty, { color: mode === 'dark' ? '#fff' : '#000' }]}>
+          No registered drives.
+        </Text>
       ) : (
         <FlatList
           data={registered}
