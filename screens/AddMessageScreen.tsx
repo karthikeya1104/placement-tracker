@@ -9,21 +9,19 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Modal,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useDrives } from '../context/DrivesContext';
 import { Drive } from '../context/DrivesContext';
 import DriveService from '../services/DriveService';
 import { ApiKeyService } from '../services/ApiKeyService';
-import SetupApiKeyScreen from './SetupApiKeyScreen';
 import CustomAlertModal from '../components/CustomAlertModal';
 import { useThemeContext } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 
 export default function AddMessageScreen() {
   const { drives, refreshDrives } = useDrives();
-  const { mode } = useThemeContext(); // ✅ global theme
+  const { mode } = useThemeContext();
   const [themeDark] = useState(mode === 'dark');
 
   const [localMode, setLocalMode] = useState<'new' | 'update'>('new');
@@ -31,38 +29,60 @@ export default function AddMessageScreen() {
   const [rawMessage, setRawMessage] = useState('');
   const [registrationStatus, setRegistrationStatus] = useState<'registered' | 'not_registered'>('registered');
   const [loading, setLoading] = useState(false);
-  const [showKeyModal, setShowKeyModal] = useState(false);
-  const [showCustomAlert, setShowCustomAlert] = useState(false);
+
+  // Custom alert for API key missing
+  const [showKeyAlert, setShowKeyAlert] = useState(false);
+
+  // Custom alert for operation result (success/error)
+  const [showResultAlert, setShowResultAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState<string>('');
+  const [alertTitle, setAlertTitle] = useState<string>('');
 
   const activeDrives = drives.filter(d => d.status !== 'finished');
   const navigation = useNavigation();
 
   const handleSave = async () => {
     if (!rawMessage.trim()) {
-      alert('Please enter a raw message.');
+      setAlertTitle('Validation Error');
+      setAlertMessage('Please enter a raw message.');
+      setShowResultAlert(true);
       return;
     }
 
     const key = await ApiKeyService.getKey();
     if (!key) {
-      setShowCustomAlert(true);
+      setShowKeyAlert(true);
       return;
     }
 
     setLoading(true);
     try {
+      let result: any;
+
       if (localMode === 'new') {
-        await DriveService.createDrive(rawMessage, { registration_status: registrationStatus });
-        alert('New drive created.');
+        result = await DriveService.createDrive(rawMessage, { registration_status: registrationStatus });
       } else {
         if (!selectedDrive) {
-          alert('Please select a drive to update.');
+          setAlertTitle('Validation Error');
+          setAlertMessage('Please select a drive to update.');
+          setShowResultAlert(true);
           return;
         }
-        await DriveService.appendMessage(selectedDrive, rawMessage);
-        alert('Message added to existing drive.');
+        result = await DriveService.appendMessage(selectedDrive, rawMessage);
       }
 
+      if (result?.success) {
+        setAlertTitle('Success');
+        setAlertMessage('Drive saved successfully.');
+      } else {
+        // Queue scenario, API/network failure, invalid key
+        setAlertTitle('Notice');
+        setAlertMessage(result?.error || 'Drive saved locally and queued to parse later.');
+      }
+
+      setShowResultAlert(true);
+
+      // Reset inputs
       setRawMessage('');
       setSelectedDrive(null);
       setLocalMode('new');
@@ -70,7 +90,9 @@ export default function AddMessageScreen() {
       refreshDrives();
     } catch (error: any) {
       console.error(error);
-      alert(error?.message || 'Failed to save message.');
+      setAlertTitle('Error');
+      setAlertMessage(error?.message || 'Failed to save message.');
+      setShowResultAlert(true);
     } finally {
       setLoading(false);
     }
@@ -184,27 +206,27 @@ export default function AddMessageScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <Modal visible={showKeyModal} animationType="slide">
-        <SetupApiKeyScreen
-          onKeySaved={() => {
-            setShowKeyModal(false);
-            alert('API key saved! You can now add messages.');
-          }}
-          onCancel={() => setShowKeyModal(false)}
-        />
-      </Modal>
-
+      {/* API Key Missing Alert */}
       <CustomAlertModal
-        visible={showCustomAlert}
+        visible={showKeyAlert}
         title="Gemini API Key Required"
         message="Before adding messages, please set up your Gemini API key so we can process them correctly."
         secondaryLabel="Maybe Later"
         primaryLabel="Add Now"
-        onSecondary={() => setShowCustomAlert(false)}
+        onSecondary={() => setShowKeyAlert(false)}
         onPrimary={() => {
-          setShowCustomAlert(false);
+          setShowKeyAlert(false);
           navigation.navigate('SetupApiKey');
         }}
+      />
+
+      {/* Operation Result Alert */}
+      <CustomAlertModal
+        visible={showResultAlert}
+        title={alertTitle}
+        message={alertMessage}
+        primaryLabel="OK"
+        onPrimary={() => setShowResultAlert(false)}
       />
     </>
   );
@@ -223,7 +245,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginRight: 8,
   },
-  toggleText: { fontWeight: '600' }, // base style
+  toggleText: { fontWeight: '600' },
   input: {
     padding: 10,
     borderRadius: 6,

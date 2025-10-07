@@ -9,17 +9,55 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { ApiKeyService } from '../services/ApiKeyService';
+import { useNavigation } from '@react-navigation/native';
+import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useThemeContext } from '../context/ThemeContext';
 
-interface Props {
-  onKeySaved: () => void;
-  onCancel?: () => void;
+const KEY = 'GEMINI_API_KEY';
+
+// Utility to check if SecureStore is available
+async function isSecureStoreAvailable(): Promise<boolean> {
+  try {
+    return await SecureStore.isAvailableAsync();
+  } catch {
+    return false;
+  }
 }
 
-export default function SetupApiKeyScreen({ onKeySaved, onCancel }: Props) {
+// Service for API key storage
+const ApiKeyService = {
+  async saveKey(key: string) {
+    if (await isSecureStoreAvailable()) {
+      await SecureStore.setItemAsync(KEY, key);
+    } else {
+      await AsyncStorage.setItem(KEY, key);
+    }
+  },
+
+  async getKey(): Promise<string | null> {
+    if (await isSecureStoreAvailable()) {
+      return await SecureStore.getItemAsync(KEY);
+    } else {
+      return await AsyncStorage.getItem(KEY);
+    }
+  },
+
+  async clearKey() {
+    if (await isSecureStoreAvailable()) {
+      await SecureStore.deleteItemAsync(KEY);
+    } else {
+      await AsyncStorage.removeItem(KEY);
+    }
+  },
+};
+
+export default function SetupApiKeyScreen() {
+  const navigation = useNavigation();
   const { mode } = useThemeContext();
+
   const [apiKey, setApiKey] = useState('');
+  const [originalKey, setOriginalKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [keyLoaded, setKeyLoaded] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -34,7 +72,10 @@ export default function SetupApiKeyScreen({ onKeySaved, onCancel }: Props) {
   useEffect(() => {
     const fetchKey = async () => {
       const storedKey = await ApiKeyService.getKey();
-      if (storedKey) setApiKey(storedKey);
+      if (storedKey) {
+        setApiKey(storedKey);
+        setOriginalKey(storedKey);
+      }
       setKeyLoaded(true);
     };
     fetchKey();
@@ -46,27 +87,47 @@ export default function SetupApiKeyScreen({ onKeySaved, onCancel }: Props) {
       return;
     }
 
+    setLoading(true);
+
     try {
-      setLoading(true);
       await ApiKeyService.saveKey(apiKey.trim());
+      setOriginalKey(apiKey.trim());
       setEditing(false);
-      onKeySaved();
-    } catch (error) {
-      alert('Failed to save API key. Try again.');
+      alert('API key saved successfully!');
+      
+    } catch (error: any) {
+      console.error('Error saving API key:', error);
+      alert('Failed to save API key. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRemove = async () => {
-    await ApiKeyService.clearKey();
-    setApiKey('');
+  const handleCancelEdit = () => {
+    setApiKey(originalKey);
     setEditing(false);
+  };
+
+  const handleRemove = async () => {
+    try {
+      await ApiKeyService.clearKey();
+      setApiKey('');
+      setOriginalKey('');
+      setEditing(false);
+    } catch (err) {
+      console.error('Failed to remove API key:', err);
+      alert('Failed to remove API key.');
+    }
   };
 
   if (!keyLoaded) {
     return (
-      <View style={[styles.container, { backgroundColor: bgColor, justifyContent: 'center', alignItems: 'center' }]}>
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: bgColor, justifyContent: 'center', alignItems: 'center' },
+        ]}
+      >
         <ActivityIndicator size="large" color={buttonColor} />
       </View>
     );
@@ -77,24 +138,12 @@ export default function SetupApiKeyScreen({ onKeySaved, onCancel }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={[styles.container, { backgroundColor: bgColor }]}
     >
-      {/* Header */}
-      {onCancel && (
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onCancel} style={styles.backButton}>
-            <Text style={[styles.backText, { color: textColor }]}>✕</Text>
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: textColor }]}>API Key Setup</Text>
-          <View style={{ width: 32 }} />
-        </View>
-      )}
-
-      {/* Body */}
       <View style={styles.body}>
-        {apiKey && !editing ? (
+        {originalKey && !editing ? (
           <View style={[styles.keyCard, { backgroundColor: inputBg }]}>
             <Text style={[styles.label, { color: subTextColor }]}>Current Gemini API Key:</Text>
             <Text selectable style={[styles.keyText, { color: textColor }]}>
-              {apiKey}
+              {originalKey}
             </Text>
             <View style={styles.buttonRow}>
               <TouchableOpacity
@@ -121,7 +170,10 @@ export default function SetupApiKeyScreen({ onKeySaved, onCancel }: Props) {
             </Text>
 
             <TextInput
-              style={[styles.input, { backgroundColor: inputBg, borderColor: inputBorder, color: textColor }]}
+              style={[
+                styles.input,
+                { backgroundColor: inputBg, borderColor: inputBorder, color: textColor },
+              ]}
               placeholder="Enter your Gemini API key"
               placeholderTextColor={subTextColor}
               value={apiKey}
@@ -138,10 +190,10 @@ export default function SetupApiKeyScreen({ onKeySaved, onCancel }: Props) {
               >
                 {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Save</Text>}
               </TouchableOpacity>
-              {apiKey && (
+              {editing && (
                 <TouchableOpacity
                   style={[styles.curvedButton, { backgroundColor: 'gray' }]}
-                  onPress={() => setEditing(false)}
+                  onPress={handleCancelEdit}
                   disabled={loading}
                 >
                   <Text style={styles.buttonText}>Cancel</Text>

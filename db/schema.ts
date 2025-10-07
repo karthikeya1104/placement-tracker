@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS drives (
   selected INTEGER,          -- 1 for selected, 0 for not
   skills_notes TEXT,
   raw_messages TEXT,         -- JSON array of raw messages
-  parse_status TEXT,         -- pending / parsed / failed
+  parse_status TEXT,         -- pending / pending_update / failed
   queued_for_retry INTEGER,  -- 1 if in network queue
   created_at TEXT,
   updated_at TEXT

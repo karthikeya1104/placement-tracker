@@ -56,7 +56,7 @@ export default function DriveCard({ drive }: DriveCardProps) {
         </View>
       ) : nextRound ? (
         <Text style={[styles.nextRound, { color: roundColor }]}>
-          Next Round: {nextRound.round_name} ({nextRound.round_date || 'TBD'})
+          Next Round: {nextRound.round_name} ({(nextRound.round_date && nextRound.round_date !== "DD-MM-YYYY HH:MM")|| 'TBD'})
         </Text>
       ) : (
         <Text style={[styles.nextRound, { color: roundColor }]}>No upcoming rounds</Text>

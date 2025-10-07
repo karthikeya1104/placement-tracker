@@ -1,15 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Switch,
-  Alert,
-  ScrollView,
-} from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Modal, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import DriveService from '../services/DriveService';
+import { useDrives } from '../context/DrivesContext';
 import { useThemeContext } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 
@@ -17,38 +9,28 @@ export default function SettingsScreen() {
   const { mode, toggleTheme } = useThemeContext();
   const navigation = useNavigation();
   const [darkModeSwitch, setDarkModeSwitch] = useState(mode === 'dark');
-
-  useEffect(() => {
-    setDarkModeSwitch(mode === 'dark');
-  }, [mode]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
+  const { clearAllDrives } = useDrives();
 
   const handleToggleDarkMode = () => {
     toggleTheme();
     setDarkModeSwitch(!darkModeSwitch);
   };
 
-  const handleResetDb = () => {
-    Alert.prompt(
-      'Reset Database',
-      'Type DELETE to confirm permanent deletion of all data.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async (text) => {
-            if (text?.toUpperCase() === 'DELETE') {
-              await DriveService.clearAll?.();
-              Alert.alert('Deleted', 'All database data has been removed.');
-            } else {
-              Alert.alert('Cancelled', 'Database reset cancelled.');
-            }
-          },
-        },
-      ],
-      'plain-text',
-      ''
-    );
+  const handleResetDb = async () => {
+    if (confirmText === 'DELETE') {
+      try {
+        await clearAllDrives();
+        setModalVisible(false);
+        setConfirmText('');
+        Alert.alert('Deleted', 'All database data has been removed.');
+      } catch (error) {
+        Alert.alert('Error', 'Failed to reset database.');
+      }
+    } else {
+      Alert.alert('Cancelled', 'Database reset cancelled.');
+    }
   };
 
   return (
@@ -56,17 +38,10 @@ export default function SettingsScreen() {
       <ScrollView>
         <Text style={[styles.title, mode === 'dark' && { color: '#fff' }]}>Settings</Text>
 
-        {/* 🔑 Manage API Key */}
-        <TouchableOpacity
-          style={styles.option}
-          onPress={() => navigation.navigate('SetupApiKey')}
-        >
-          <Text style={[styles.optionText, mode === 'dark' && { color: '#fff' }]}>
-            🔑 Manage API Key
-          </Text>
+        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('SetupApiKey')}>
+          <Text style={[styles.optionText, mode === 'dark' && { color: '#fff' }]}>🔑 Manage API Key</Text>
         </TouchableOpacity>
 
-        {/* 🌙 Dark / Light Mode */}
         <View style={styles.optionRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Ionicons
@@ -82,7 +57,6 @@ export default function SettingsScreen() {
           <Switch value={darkModeSwitch} onValueChange={handleToggleDarkMode} />
         </View>
 
-        {/* ℹ️ About */}
         <TouchableOpacity
           style={styles.option}
           onPress={() =>
@@ -95,11 +69,36 @@ export default function SettingsScreen() {
           <Text style={[styles.optionText, mode === 'dark' && { color: '#fff' }]}>ℹ️ About</Text>
         </TouchableOpacity>
 
-        {/* 🧨 Reset Database */}
-        <TouchableOpacity style={styles.dangerOption} onPress={handleResetDb}>
+        <TouchableOpacity style={styles.dangerOption} onPress={() => setModalVisible(true)}>
           <Text style={styles.dangerText}>🧨 Reset Database</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Modal for DELETE confirmation */}
+      <Modal visible={modalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Reset Database</Text>
+            <Text style={styles.modalText}>
+              This will permanently delete all drives and rounds. Type "DELETE" to confirm.
+            </Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Type DELETE to confirm"
+              value={confirmText}
+              onChangeText={setConfirmText}
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.deleteBtn} onPress={handleResetDb}>
+                <Text style={styles.deleteText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -125,4 +124,31 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   dangerText: { color: '#d00', fontWeight: '600' },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    width: '85%',
+  },
+  modalTitle: { fontSize: 20, fontWeight: '600', marginBottom: 10 },
+  modalText: { fontSize: 16, marginBottom: 15 },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 15,
+  },
+  modalButtons: { flexDirection: 'row', justifyContent: 'flex-end' },
+  cancelBtn: { marginRight: 15 },
+  cancelText: { color: '#555', fontWeight: '600' },
+  deleteBtn: {},
+  deleteText: { color: '#d00', fontWeight: '600' },
 });

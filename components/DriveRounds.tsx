@@ -12,7 +12,7 @@ interface Props {
   newRound: any;
   setNewRound: (round: any) => void;
   handleAddRound: () => void;
-  handleSaveNewRound: () => void;
+  handleSaveNewRound: (round: any) => void;
   handleCancelNewRound: () => void;
   handleSaveRound: (updatedRound: any) => void;
   handleDeleteRound: (id: number) => void;
@@ -36,41 +36,92 @@ export default function DriveRounds(props: Props) {
   const { mode } = useThemeContext();
   const [editingRoundCopy, setEditingRoundCopy] = useState<any>(null);
 
-  // Theme-aware colors
   const bgColor = mode === "dark" ? "#1e1e1e" : "#fff";
-  const inputBg = mode === "dark" ? "#3a3a3a" : "#e0e0e0"; // light gray in light mode
+  const inputBg = mode === "dark" ? "#3a3a3a" : "#e0e0e0";
   const textColor = mode === "dark" ? "#fff" : "#222";
   const pickerBg = mode === "dark" ? "#2a2a2a" : "#fafafa";
 
   const sortedRounds = [...editableRounds].sort((a, b) => (a.round_number || 0) - (b.round_number || 0));
 
+  /** Start editing a round */
   const startEditing = (round: any) => {
     setEditingRoundCopy({ ...round });
     setEditingRoundId(round.id);
   };
 
+  /** Cancel editing */
   const cancelEditing = () => {
     setEditingRoundCopy(null);
     setEditingRoundId(null);
   };
 
-  const saveEditing = () => {
+  /** Save new round with shift logic */
+  const saveNewRoundWithInsert = () => {
+    if (!newRound) return;
+
+    let newNumber = Number(newRound.round_number) || sortedRounds.length + 1;
+    newNumber = Math.max(1, newNumber);
+
+    // Shift existing rounds >= newNumber
+    let updatedRounds = editableRounds.map(r =>
+      r.round_number >= newNumber ? { ...r, round_number: r.round_number + 1 } : r
+    );
+
+    // Insert new round
+    const newRoundObj = { ...newRound, round_number: newNumber, id: Date.now() };
+    updatedRounds.push(newRoundObj);
+
+    // Sort and reassign sequential numbers
+    updatedRounds.sort((a, b) => (a.round_number || 0) - (b.round_number || 0));
+    updatedRounds.forEach((r, index) => r.round_number = index + 1);
+
+    setEditableRounds(updatedRounds);
+    handleSaveNewRound(newRoundObj);
+    setNewRound(null);
+  };
+
+  /** Save editing round with shift logic */
+  const saveEditingWithShift = () => {
     if (!editingRoundCopy) return;
-    editingRoundCopy.round_number = Number(editingRoundCopy.round_number) || 0;
-    setEditableRounds(prev => prev.map(r => (r.id === editingRoundCopy.id ? { ...editingRoundCopy } : r)));
-    handleSaveRound(editingRoundCopy);
+
+    let newNumber = Number(editingRoundCopy.round_number) || 1;
+    newNumber = Math.max(1, newNumber);
+
+    // Remove the current round
+    let updatedRounds = editableRounds.filter(r => r.id !== editingRoundCopy.id);
+
+    // Shift rounds >= newNumber
+    updatedRounds = updatedRounds.map(r =>
+      r.round_number >= newNumber ? { ...r, round_number: r.round_number + 1 } : r
+    );
+
+    // Insert edited round
+    updatedRounds.push({ ...editingRoundCopy, round_number: newNumber });
+
+    // Sort and reassign sequential numbers
+    updatedRounds.sort((a, b) => (a.round_number || 0) - (b.round_number || 0));
+    updatedRounds.forEach((r, index) => r.round_number = index + 1);
+
+    setEditableRounds(updatedRounds);
+    handleSaveRound({ ...editingRoundCopy, round_number: newNumber });
+
     setEditingRoundCopy(null);
     setEditingRoundId(null);
   };
 
   return (
     <View>
+      {/* Add New Round Button */}
       {!newRound && (
-        <TouchableOpacity style={[styles.curvedButton, { backgroundColor: "#6200ee", marginBottom: 12 }]} onPress={handleAddRound}>
+        <TouchableOpacity
+          style={[styles.curvedButton, { backgroundColor: "#6200ee", marginBottom: 12 }]}
+          onPress={handleAddRound}
+        >
           <Text style={styles.curvedButtonText}>Add Round</Text>
         </TouchableOpacity>
       )}
 
+      {/* New Round Form */}
       {newRound && (
         <View style={[styles.roundCard, { backgroundColor: bgColor }]}>
           <TextInput
@@ -95,70 +146,141 @@ export default function DriveRounds(props: Props) {
             onChangeText={t => setNewRound({ ...newRound, round_date: t })}
             placeholderTextColor={mode === "dark" ? "#aaa" : "#888"}
           />
-          <Picker selectedValue={newRound.status || "upcoming"} style={[styles.picker, { backgroundColor: pickerBg, color: textColor }]} onValueChange={v => setNewRound({ ...newRound, status: v })}>
+          <Picker
+            selectedValue={newRound.status || "upcoming"}
+            style={[styles.picker, { backgroundColor: pickerBg, color: textColor }]}
+            onValueChange={v => setNewRound({ ...newRound, status: v })}
+          >
             <Picker.Item label="Upcoming" value="upcoming" />
             <Picker.Item label="Finished" value="finished" />
           </Picker>
-          <Picker selectedValue={newRound.result || "not_conducted"} style={[styles.picker, { backgroundColor: pickerBg, color: textColor }]} onValueChange={v => setNewRound({ ...newRound, result: v })}>
+          <Picker
+            selectedValue={newRound.result || "not_conducted"}
+            style={[styles.picker, { backgroundColor: pickerBg, color: textColor }]}
+            onValueChange={v => setNewRound({ ...newRound, result: v })}
+          >
             <Picker.Item label="Not Conducted" value="not_conducted" />
             <Picker.Item label="Shortlisted" value="shortlisted" />
             <Picker.Item label="Rejected" value="rejected" />
           </Picker>
 
           <View style={styles.buttonRow}>
-            <TouchableOpacity style={[styles.curvedButton, { backgroundColor: "#6200ee" }]} onPress={handleSaveNewRound}>
+            <TouchableOpacity
+              style={[styles.curvedButton, { backgroundColor: "#6200ee" }]}
+              onPress={saveNewRoundWithInsert}
+            >
               <Text style={styles.curvedButtonText}>Save</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.curvedButton, { backgroundColor: "#888" }]} onPress={handleCancelNewRound}>
+            <TouchableOpacity
+              style={[styles.curvedButton, { backgroundColor: "#888" }]}
+              onPress={handleCancelNewRound}
+            >
               <Text style={styles.curvedButtonText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
 
+      {/* Existing Rounds */}
       {sortedRounds.map(round => (
         <View key={round.id} style={[styles.roundCard, { backgroundColor: bgColor }]}>
           {editingRoundId === round.id && editingRoundCopy ? (
             <>
-              <TextInput style={[styles.input, { backgroundColor: inputBg, color: textColor }]} value={String(editingRoundCopy.round_number || 0)} keyboardType="numeric" onChangeText={t => setEditingRoundCopy({ ...editingRoundCopy, round_number: Number(t) || 0 })} />
-              <TextInput style={[styles.input, { backgroundColor: inputBg, color: textColor }]} value={editingRoundCopy.round_name} onChangeText={t => setEditingRoundCopy({ ...editingRoundCopy, round_name: t })} />
-              <TextInput style={[styles.input, { backgroundColor: inputBg, color: textColor }]} value={editingRoundCopy.round_date} onChangeText={t => setEditingRoundCopy({ ...editingRoundCopy, round_date: t })} />
-
-              <Picker selectedValue={editingRoundCopy.status} style={[styles.picker, { backgroundColor: pickerBg, color: textColor }]} onValueChange={v => setEditingRoundCopy({ ...editingRoundCopy, status: v })}>
+              {/* Editable Fields */}
+              <TextInput
+                style={[styles.input, { backgroundColor: inputBg, color: textColor }]}
+                value={String(editingRoundCopy.round_number || 0)}
+                keyboardType="numeric"
+                onChangeText={t =>
+                  setEditingRoundCopy({ ...editingRoundCopy, round_number: Number(t) || 0 })
+                }
+              />
+              <TextInput
+                style={[styles.input, { backgroundColor: inputBg, color: textColor }]}
+                value={editingRoundCopy.round_name}
+                onChangeText={t => setEditingRoundCopy({ ...editingRoundCopy, round_name: t })}
+              />
+              <TextInput
+                style={[styles.input, { backgroundColor: inputBg, color: textColor }]}
+                value={editingRoundCopy.round_date}
+                onChangeText={t => setEditingRoundCopy({ ...editingRoundCopy, round_date: t })}
+              />
+              <Picker
+                selectedValue={editingRoundCopy.status}
+                style={[styles.picker, { backgroundColor: pickerBg, color: textColor }]}
+                onValueChange={v => setEditingRoundCopy({ ...editingRoundCopy, status: v })}
+              >
                 <Picker.Item label="Upcoming" value="upcoming" />
                 <Picker.Item label="Finished" value="finished" />
               </Picker>
-              <Picker selectedValue={editingRoundCopy.result} style={[styles.picker, { backgroundColor: pickerBg, color: textColor }]} onValueChange={v => setEditingRoundCopy({ ...editingRoundCopy, result: v })}>
+              <Picker
+                selectedValue={editingRoundCopy.result}
+                style={[styles.picker, { backgroundColor: pickerBg, color: textColor }]}
+                onValueChange={v => setEditingRoundCopy({ ...editingRoundCopy, result: v })}
+              >
                 <Picker.Item label="Not Conducted" value="not_conducted" />
                 <Picker.Item label="Shortlisted" value="shortlisted" />
                 <Picker.Item label="Rejected" value="rejected" />
               </Picker>
 
               <View style={styles.buttonRow}>
-                <TouchableOpacity style={[styles.curvedButton, { backgroundColor: "#6200ee" }]} onPress={saveEditing}>
+                <TouchableOpacity
+                  style={[styles.curvedButton, { backgroundColor: "#6200ee" }]}
+                  onPress={saveEditingWithShift}
+                >
                   <Text style={styles.curvedButtonText}>Save</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={[styles.curvedButton, { backgroundColor: "#888" }]} onPress={cancelEditing}>
+                <TouchableOpacity
+                  style={[styles.curvedButton, { backgroundColor: "#888" }]}
+                  onPress={cancelEditing}
+                >
                   <Text style={styles.curvedButtonText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
             </>
           ) : (
             <>
-              <TextInput style={[styles.input, { backgroundColor: inputBg, color: textColor }]} value={String(round.round_number || DEFAULT_ROUND.round_number)} editable keyboardType="numeric" onChangeText={t => setEditableRounds(prev => prev.map(r => (r.id === round.id ? { ...r, round_number: Number(t) || 0 } : r)))} />
-              <TextInput style={[styles.input, { backgroundColor: inputBg, color: textColor }]} value={round.round_name || DEFAULT_ROUND.round_name} editable={false} />
-              <TextInput style={[styles.input, { backgroundColor: inputBg, color: textColor }]} value={round.round_date || DEFAULT_ROUND.round_date} editable={false} />
-              <TextInput style={[styles.input, { backgroundColor: inputBg, color: textColor }]} value={round.status || DEFAULT_ROUND.status} editable={false} />
-              <TextInput style={[styles.input, { backgroundColor: inputBg, color: textColor }]} value={round.result || "Not Conducted"} editable={false} />
+              {/* Read-Only Fields */}
+              <TextInput
+                style={[styles.input, { backgroundColor: inputBg, color: textColor }]}
+                value={String(round.round_number || DEFAULT_ROUND.round_number)}
+                editable={false}
+              />
+              <TextInput
+                style={[styles.input, { backgroundColor: inputBg, color: textColor }]}
+                value={round.round_name || DEFAULT_ROUND.round_name}
+                editable={false}
+              />
+              <TextInput
+                style={[styles.input, { backgroundColor: inputBg, color: textColor }]}
+                value={round.round_date || DEFAULT_ROUND.round_date}
+                editable={false}
+              />
+              <TextInput
+                style={[styles.input, { backgroundColor: inputBg, color: textColor }]}
+                value={round.status || DEFAULT_ROUND.status}
+                editable={false}
+              />
+              <TextInput
+                style={[styles.input, { backgroundColor: inputBg, color: textColor }]}
+                value={round.result || "Not Conducted"}
+                editable={false}
+              />
 
               <View style={styles.buttonRow}>
-                <TouchableOpacity style={[styles.curvedButton, { backgroundColor: "#6200ee" }]} onPress={() => startEditing(round)}>
+                <TouchableOpacity
+                  style={[styles.curvedButton, { backgroundColor: "#6200ee" }]}
+                  onPress={() => startEditing(round)}
+                >
                   <Text style={styles.curvedButtonText}>Edit</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={[styles.curvedButton, { backgroundColor: "red" }]} onPress={() => handleDeleteRound(round.id)}>
+                <TouchableOpacity
+                  style={[styles.curvedButton, { backgroundColor: "red" }]}
+                  onPress={() => handleDeleteRound(round.id)}
+                >
                   <Text style={styles.curvedButtonText}>Delete</Text>
                 </TouchableOpacity>
               </View>

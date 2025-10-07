@@ -54,6 +54,9 @@ class GeminiService {
         - If a round with the same or similar name exists, modify it (new date, status, round_number).
         - If a new round appears, assign the correct round_number provided in the message.
         - Never duplicate rounds unnecessarily.
+        - I think you should be able to identify rounds orders based on common names
+
+      Ignore URLs, registration deadlines, contact info.
 
       ### CURRENT DRIVE DETAILS
       ${JSON.stringify({
@@ -82,7 +85,7 @@ class GeminiService {
           { "round_number": number, "round_name": "string", "round_date": "string", "status": "upcoming" | "finished" }
         ]
       }
-
+      
       Do not wrap the output in markdown fences. Return only JSON.
       `;
 

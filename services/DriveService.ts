@@ -1,5 +1,5 @@
 import GeminiService from './GeminiService';
-import { insertDrive, updateDrive, getDriveById, insertRound, getRoundsByDrive, updateRound } from '../db/SQLiteService';
+import { insertDrive, updateDrive, getDriveById, insertRound, getRoundsByDrive, updateRound, getDB  } from '../db/SQLiteService';
 import { Drive } from '../context/DrivesContext';
 
 class DriveService {
@@ -21,7 +21,7 @@ class DriveService {
       const id = await insertDrive(drive);
       if (!id) throw new Error('Failed to insert drive');
 
-      await DriveService.tryParseDrive(id, [rawMessage]);
+      await DriveService.tryParseDrive(id, [rawMessage], 'new');
       return { success: true };
     } catch (error: any) {
       console.error('createDrive failed:', error);
@@ -34,7 +34,16 @@ class DriveService {
       const drive = await getDriveById(driveId);
       if (!drive) return { success: false, error: 'Drive not found' };
 
-      const messages = JSON.parse(drive.raw_messages || '[]');
+      // Safely parse raw_messages
+      let messages: string[] = [];
+      try {
+        messages = JSON.parse(drive.raw_messages || '[]');
+        if (!Array.isArray(messages)) messages = [];
+      } catch {
+        console.warn(`Invalid raw_messages for drive ${driveId}, resetting to empty array`);
+        messages = [];
+      }
+
       messages.push(rawMessage);
 
       await updateDrive(driveId, {
@@ -43,7 +52,7 @@ class DriveService {
         queued_for_retry: 1,
       });
 
-      await DriveService.tryParseDrive(driveId, messages);
+      await DriveService.tryParseDrive(driveId, messages, 'update');
       return { success: true };
     } catch (error: any) {
       console.error('appendMessage failed:', error);
@@ -51,24 +60,17 @@ class DriveService {
     }
   }
 
-  static async tryParseDrive(driveId: number, rawMessages: string[]) {
+  static async tryParseDrive(driveId: number, rawMessages: string[], mode: string) {
+    const drive = await getDriveById(driveId);
+    const rounds = await getRoundsByDrive(driveId);
+
+    if (!drive) throw new Error(`Drive ${driveId} not found in DB`);
+
     try {
-      const drive = await getDriveById(driveId);
-      const rounds = await getRoundsByDrive(driveId);
-
-      if (!drive) throw new Error(`Drive ${driveId} not found in DB`);
-
-      let parsed = null;
-      try {
-        parsed =
-          drive.parse_status === 'pending'
-            ? await GeminiService.parseRawMessage(rawMessages)
-            : await GeminiService.parseDriveUpdate(drive, rounds, rawMessages[rawMessages.length - 1]);
-      } catch (err) {
-        console.warn(`Gemini parsing failed for drive ${driveId}`);
-        await updateDrive(driveId, { queued_for_retry: 1 });
-        return;
-      }
+      const parsed =
+        mode === 'new'
+          ? await GeminiService.parseRawMessage(rawMessages)
+          : await GeminiService.parseDriveUpdate(drive, rounds, rawMessages[rawMessages.length - 1]);
 
       const safeValue = (newVal: any, oldVal: any) =>
         newVal && newVal !== 'Not Provided' && newVal.trim() !== '' ? newVal : oldVal;
@@ -83,15 +85,12 @@ class DriveService {
         queued_for_retry: 0,
       });
 
-      // ----------------------------
-      // Round synchronization using Gemini's round_number
-      // ----------------------------
-      if (Array.isArray(parsed.rounds) && parsed.rounds.length > 0) {
+      // Sync rounds
+      if (Array.isArray(parsed.rounds)) {
         for (const parsedRound of parsed.rounds) {
           const existing = rounds.find(
             r => r.round_name.trim().toLowerCase() === parsedRound.round_name.trim().toLowerCase()
           );
-
           if (existing) {
             await updateRound(existing.id, {
               round_number: parsedRound.round_number || existing.round_number,
@@ -109,11 +108,31 @@ class DriveService {
           }
         }
       }
-
-    } catch (error) {
-      console.warn(`Parsing failed for drive ${driveId}. Will retry later.`);
-      console.error(error);
+    } catch (err: any) {
       await updateDrive(driveId, { queued_for_retry: 1 });
+
+      if (err.message.includes('API key')) {
+        throw new Error(
+          'Invalid Gemini API key. Drive saved locally and queued to parse. Please update your key.'
+        );
+      } else {
+        throw new Error(
+          'Network or service issue: Drive saved locally and queued to parse later.'
+        );
+      }
+    }
+  }
+
+  static async clearAll() {
+    try {
+      const db = getDB();
+      await db.runAsync(`DELETE FROM rounds`);
+      await db.runAsync(`DELETE FROM drives`);
+      console.log('All database data cleared.');
+      
+    } catch (error) {
+      console.error('Failed to clear DB:', error);
+      throw error;
     }
   }
 }

@@ -46,6 +46,7 @@ interface DrivesContextType {
   addRoundToDrive: (driveId: number, round: Partial<Round>) => Promise<boolean>;
   updateRoundInDrive: (driveId: number, roundId: number, updates: Partial<Round>) => Promise<boolean>;
   removeRoundFromDrive: (driveId: number, roundId: number) => Promise<boolean>;
+  clearAllDrives: () => Promise<void>;
 }
 
 const DrivesContext = createContext<DrivesContextType>({
@@ -58,6 +59,7 @@ const DrivesContext = createContext<DrivesContextType>({
   addRoundToDrive: async () => false,
   updateRoundInDrive: async () => false,
   removeRoundFromDrive: async () => false,
+  clearAllDrives: async () => {},
 });
 
 export const DrivesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -147,15 +149,25 @@ export const DrivesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return success;
   };
 
+  const clearAllDrives = async () => {
+    try {
+      await DriveService.clearAll(); // clears DB tables
+      setDrives([]); // clear context state
+    } catch (error) {
+      console.error('Failed to clear drives:', error);
+    }
+  };
+
   const retryQueuedDrives = async () => {
     try {
       const allDrives = await getAllDrives();
-      const queuedDrives = allDrives.filter(d => d.parse_status === 'pending' && d.queued_for_retry);
+      const queuedDrives = allDrives.filter(d => d.queued_for_retry);
 
       for (const drive of queuedDrives) {
         try {
+          const mode = drive.parse_status === 'pending' ? 'new' : 'update'; 
           // Use the existing DriveService to retry parsing
-          await DriveService.tryParseDrive(drive.id, drive.raw_messages);
+          await DriveService.tryParseDrive(drive.id, drive.raw_messages, mode);
 
           console.log(`Retry succeeded for drive: ${drive.company_name}`);
         } catch (error) {
@@ -187,6 +199,7 @@ export const DrivesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         addRoundToDrive,
         updateRoundInDrive,
         removeRoundFromDrive,
+        clearAllDrives,
       }}
     >
       {children}

@@ -34,6 +34,8 @@ const getDB = () => {
   return db;
 };
 
+export { getDB };
+
 // ---------------- Drives CRUD ----------------
 export const insertDrive = async (drive: any): Promise<number | null> => {
   try {
