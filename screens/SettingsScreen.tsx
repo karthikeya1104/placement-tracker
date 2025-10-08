@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useDrives } from '../context/DrivesContext';
 import { useThemeContext } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
+import { exportToCSV } from '@/db/CSVService';
 
 export default function SettingsScreen() {
   const { mode, toggleTheme } = useThemeContext();
@@ -67,6 +68,34 @@ export default function SettingsScreen() {
           }
         >
           <Text style={[styles.optionText, mode === 'dark' && { color: '#fff' }]}>ℹ️ About</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.option}
+          onPress={async () => {
+            try {
+              const { drivesCSV, roundsCSV } = await exportToCSV();
+              Alert.alert('Exported', 'Database exported to CSV successfully.');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to export CSV.');
+            }
+          }}
+        >
+          <Text style={[styles.optionText, mode === 'dark' && { color: '#fff' }]}>💾 Export to CSV</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.option}
+          onPress={async () => {
+            try {
+              // For simplicity, use FileSystem or DocumentPicker to get CSV files
+              Alert.alert('Import', 'Select CSV files to import (implement using DocumentPicker).');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to import CSV.');
+            }
+          }}
+        >
+          <Text style={[styles.optionText, mode === 'dark' && { color: '#fff' }]}>📂 Import from CSV</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.dangerOption} onPress={() => setModalVisible(true)}>
