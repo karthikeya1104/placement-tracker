@@ -3,6 +3,7 @@ import { View, TextInput, TouchableOpacity, Text, StyleSheet } from "react-nativ
 import { Picker } from "@react-native-picker/picker";
 import { DEFAULT_ROUND } from "../utils/utils";
 import { useThemeContext } from "../context/ThemeContext";
+import CustomAlertModal from "./CustomAlertModal";
 
 interface Props {
   editableRounds: any[];
@@ -41,7 +42,8 @@ export default function DriveRounds(props: Props) {
   const textColor = mode === "dark" ? "#fff" : "#222";
   const pickerBg = mode === "dark" ? "#2a2a2a" : "#fafafa";
 
-  const sortedRounds = [...editableRounds].sort((a, b) => (a.round_number || 0) - (b.round_number || 0));
+  const [alertVisible, setAlertVisible] = React.useState(false);
+  const [alertMessage, setAlertMessage] = React.useState('');
 
   /** Start editing a round */
   const startEditing = (round: any) => {
@@ -55,58 +57,82 @@ export default function DriveRounds(props: Props) {
     setEditingRoundId(null);
   };
 
-  /** Save new round with shift logic */
-  const saveNewRoundWithInsert = () => {
-    if (!newRound) return;
+  /** Sort rounds by round_number and renumber sequentially */
+  const normalizeAndPrioritizeRounds = (rounds: any[], prioritizedRound?: any) => {
+    // Sort by round_number first
+    let sorted = [...rounds].sort((a, b) => (Number(a.round_number) || 0) - (Number(b.round_number) || 0));
 
-    let newNumber = Number(newRound.round_number) || sortedRounds.length + 1;
-    newNumber = Math.max(1, newNumber);
+    // If we have a round to prioritize (new or edited)
+    if (prioritizedRound) {
+      // Remove it from array if already exists
+      sorted = sorted.filter(r => r !== prioritizedRound);
 
-    // Shift existing rounds >= newNumber
-    let updatedRounds = editableRounds.map(r =>
-      r.round_number >= newNumber ? { ...r, round_number: r.round_number + 1 } : r
-    );
+      // Insert it at the correct position
+      const insertIdx = sorted.findIndex(r => (Number(r.round_number) || 0) >= (Number(prioritizedRound.round_number) || 0));
+      if (insertIdx === -1) sorted.push(prioritizedRound);
+      else sorted.splice(insertIdx, 0, prioritizedRound);
+    }
 
-    // Insert new round
-    const newRoundObj = { ...newRound, round_number: newNumber, id: Date.now() };
-    updatedRounds.push(newRoundObj);
-
-    // Sort and reassign sequential numbers
-    updatedRounds.sort((a, b) => (a.round_number || 0) - (b.round_number || 0));
-    updatedRounds.forEach((r, index) => r.round_number = index + 1);
-
-    setEditableRounds(updatedRounds);
-    handleSaveNewRound(newRoundObj);
-    setNewRound(null);
+    // Renumber sequentially
+    sorted.forEach((r, idx) => (r.round_number = idx + 1));
+    return sorted;
   };
 
-  /** Save editing round with shift logic */
-  const saveEditingWithShift = () => {
+  /** Save new round */
+  const saveNewRoundWithInsert = async () => {
+    if (!newRound) return;
+
+    const newRoundObj: Partial<Round> = {
+      ...newRound,
+      round_number: Number(newRound.round_number) || editableRounds.length + 1,
+    };
+
+    // Add and normalize
+    let updatedRounds = normalizeAndPrioritizeRounds([...editableRounds, newRoundObj], newRoundObj);
+
+    // Bulk save
+    const finalRounds: any[] = [];
+    for (const round of updatedRounds) {
+      if (round.id) {
+        await handleSaveRound(round);
+        finalRounds.push(round);
+      } else {
+        const savedRound = await handleSaveNewRound(round);
+        if (savedRound) finalRounds.push(savedRound); // now savedRound has id
+      }
+    }
+
+    setEditableRounds(finalRounds);
+    setNewRound(null);
+
+    // Show alert
+    setAlertMessage('New round has been saved successfully!');
+    setAlertVisible(true);
+  };
+
+  /** Save edited round */
+  const saveEditingWithShift = async () => {
     if (!editingRoundCopy) return;
 
-    let newNumber = Number(editingRoundCopy.round_number) || 1;
-    newNumber = Math.max(1, newNumber);
+    const otherRounds = editableRounds.filter(r => r.id !== editingRoundCopy.id);
+    const updatedRounds = normalizeAndPrioritizeRounds([...otherRounds, editingRoundCopy], editingRoundCopy);
 
-    // Remove the current round
-    let updatedRounds = editableRounds.filter(r => r.id !== editingRoundCopy.id);
-
-    // Shift rounds >= newNumber
-    updatedRounds = updatedRounds.map(r =>
-      r.round_number >= newNumber ? { ...r, round_number: r.round_number + 1 } : r
-    );
-
-    // Insert edited round
-    updatedRounds.push({ ...editingRoundCopy, round_number: newNumber });
-
-    // Sort and reassign sequential numbers
-    updatedRounds.sort((a, b) => (a.round_number || 0) - (b.round_number || 0));
-    updatedRounds.forEach((r, index) => r.round_number = index + 1);
+    // Bulk save
+    for (const round of updatedRounds) {
+      if (round.id) {
+        await handleSaveRound(round);
+      } else {
+        await handleSaveNewRound(round);
+      }
+    }
 
     setEditableRounds(updatedRounds);
-    handleSaveRound({ ...editingRoundCopy, round_number: newNumber });
-
     setEditingRoundCopy(null);
     setEditingRoundId(null);
+
+    // Show alert
+    setAlertMessage('Round edits have been saved successfully!');
+    setAlertVisible(true);
   };
 
   return (
@@ -126,10 +152,10 @@ export default function DriveRounds(props: Props) {
         <View style={[styles.roundCard, { backgroundColor: bgColor }]}>
           <TextInput
             style={[styles.input, { backgroundColor: inputBg, color: textColor }]}
-            value={String(newRound.round_number || sortedRounds.length + 1)}
+            value={newRound.round_number ? String(newRound.round_number) : ""}
             placeholder="Round Number"
             keyboardType="numeric"
-            onChangeText={t => setNewRound({ ...newRound, round_number: Number(t) || 0 })}
+            onChangeText={t => setNewRound({ ...newRound, round_number: t ? Number(t) : undefined })}
             placeholderTextColor={mode === "dark" ? "#aaa" : "#888"}
           />
           <TextInput
@@ -183,31 +209,30 @@ export default function DriveRounds(props: Props) {
       )}
 
       {/* Existing Rounds */}
-      {sortedRounds.map(round => (
+      {editableRounds.map(round => (
         <View key={round.id} style={[styles.roundCard, { backgroundColor: bgColor }]}>
           {editingRoundId === round.id && editingRoundCopy ? (
             <>
-              {/* Editable Fields */}
               <TextInput
                 style={[styles.input, { backgroundColor: inputBg, color: textColor }]}
-                value={String(editingRoundCopy.round_number || 0)}
+                value={editingRoundCopy.round_number ? String(editingRoundCopy.round_number) : ""}
                 keyboardType="numeric"
                 onChangeText={t =>
-                  setEditingRoundCopy({ ...editingRoundCopy, round_number: Number(t) || 0 })
+                  setEditingRoundCopy({ ...editingRoundCopy, round_number: t ? Number(t) : undefined })
                 }
               />
               <TextInput
                 style={[styles.input, { backgroundColor: inputBg, color: textColor }]}
-                value={editingRoundCopy.round_name}
+                value={editingRoundCopy.round_name || ""}
                 onChangeText={t => setEditingRoundCopy({ ...editingRoundCopy, round_name: t })}
               />
               <TextInput
                 style={[styles.input, { backgroundColor: inputBg, color: textColor }]}
-                value={editingRoundCopy.round_date}
+                value={editingRoundCopy.round_date || ""}
                 onChangeText={t => setEditingRoundCopy({ ...editingRoundCopy, round_date: t })}
               />
               <Picker
-                selectedValue={editingRoundCopy.status}
+                selectedValue={editingRoundCopy.status || "upcoming"}
                 style={[styles.picker, { backgroundColor: pickerBg, color: textColor }]}
                 onValueChange={v => setEditingRoundCopy({ ...editingRoundCopy, status: v })}
               >
@@ -215,7 +240,7 @@ export default function DriveRounds(props: Props) {
                 <Picker.Item label="Finished" value="finished" />
               </Picker>
               <Picker
-                selectedValue={editingRoundCopy.result}
+                selectedValue={editingRoundCopy.result || "not_conducted"}
                 style={[styles.picker, { backgroundColor: pickerBg, color: textColor }]}
                 onValueChange={v => setEditingRoundCopy({ ...editingRoundCopy, result: v })}
               >
@@ -242,7 +267,6 @@ export default function DriveRounds(props: Props) {
             </>
           ) : (
             <>
-              {/* Read-Only Fields */}
               <TextInput
                 style={[styles.input, { backgroundColor: inputBg, color: textColor }]}
                 value={String(round.round_number || DEFAULT_ROUND.round_number)}
@@ -288,6 +312,12 @@ export default function DriveRounds(props: Props) {
           )}
         </View>
       ))}
+      <CustomAlertModal
+        visible={alertVisible}
+        title="Success"
+        message={alertMessage}
+        onPrimary={() => setAlertVisible(false)}
+      />
     </View>
   );
 }

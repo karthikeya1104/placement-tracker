@@ -132,9 +132,9 @@ export const DrivesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const addRoundToDrive = async (driveId: number, round: Partial<Round>) => {
     const id = await insertRound({ ...round, drive_id: driveId });
-    if (!id) return false;
+    if (!id) return -1;
     await refreshRoundsForDrive(driveId);
-    return true;
+    return id;
   };
 
   const updateRoundInDrive = async (driveId: number, roundId: number, updates: Partial<Round>) => {

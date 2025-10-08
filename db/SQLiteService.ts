@@ -146,6 +146,7 @@ export const insertRound = async (round: any): Promise<number | null> => {
         round.result || 'not_conducted',
       ]
     );
+    
     return result.lastInsertRowId;
   } catch (error) {
     console.error('Insert round error:', error);

@@ -91,41 +91,48 @@ export default function DriveDetailScreen({ route, navigation }: any) {
   const handleAddNewRound = () => setNewRound({ round_name: "", round_date: "", status: "upcoming", result: "not_conducted" });
   const handleCancelNewRound = () => setNewRound(null);
 
-  const handleSaveNewRound = async () => {
-    if (!newRound) return;
-    if (!newRound.round_name?.trim()) newRound.round_name = DEFAULT_ROUND.round_name;
-    if (!newRound.round_date?.trim()) newRound.round_date = DEFAULT_ROUND.round_date;
-    const success = await addRoundToDrive(drive.id, newRound);
-    if (success) {
-      Alert.alert("Success", "Round added successfully!");
+  const handleSaveNewRound = async (round: any) => {
+    if (!round) return null;
+
+    // Default values
+    if (!round.round_name?.trim()) round.round_name = DEFAULT_ROUND.round_name;
+    if (!round.round_date?.trim()) round.round_date = DEFAULT_ROUND.round_date;
+
+    const id = await addRoundToDrive(drive.id, round); // should return saved round with id
+
+    if (id !== -1) {
+      const savedRound = { ...round, id }
+      setEditableRounds(prev => [...prev.filter(r => r !== round), savedRound]); // replace temp round with saved one
       setNewRound(null);
-    } else Alert.alert("Error", "Failed to add round.");
+      return savedRound;
+    }
+
+    return null;
   };
 
   const handleSaveRound = async (updatedRound: any) => {
-    if (!updatedRound) return;
+    if (!updatedRound) return false;
 
     const updates = {
       round_name: updatedRound.round_name?.trim() || DEFAULT_ROUND.round_name,
       round_date: updatedRound.round_date?.trim() || DEFAULT_ROUND.round_date,
       status: updatedRound.status || DEFAULT_ROUND.status,
       result: updatedRound.result || DEFAULT_ROUND.result,
+      round_number: updatedRound.round_number, // include round_number
     };
 
     const success = await updateRoundInDrive(drive.id, updatedRound.id, updates);
 
     if (success) {
-      Alert.alert("Success", "Round updated successfully!");
-
       // Update local state to reflect backend changes
       setEditableRounds(prev =>
         prev.map(r => (r.id === updatedRound.id ? { ...r, ...updates } : r))
       );
-    } else {
-      Alert.alert("Error", "Failed to update round.");
+      setEditingRoundId(null);
+      return true;
     }
 
-    setEditingRoundId(null);
+    return false;
   };
 
   const handleDeleteRound = async (roundId: number) => {

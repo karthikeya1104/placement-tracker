@@ -33,7 +33,7 @@ export default function DriveCard({ drive }: DriveCardProps) {
           ?.filter(r => r.status === 'upcoming')
           .sort((a, b) => (a.round_number || 0) - (b.round_number || 0))[0]
       : null;
-
+      
   const bgColor = mode === 'dark' ? '#1e1e1e' : '#fff';
   const textColor = mode === 'dark' ? '#fff' : '#333';
   const subTextColor = mode === 'dark' ? '#ccc' : '#555';
@@ -56,7 +56,7 @@ export default function DriveCard({ drive }: DriveCardProps) {
         </View>
       ) : nextRound ? (
         <Text style={[styles.nextRound, { color: roundColor }]}>
-          Next Round: {nextRound.round_name} ({(nextRound.round_date && nextRound.round_date !== "DD-MM-YYYY HH:MM")|| 'TBD'})
+          Next Round: {nextRound.round_name} ({(nextRound.round_date && nextRound.round_date !== "DD-MM-YYYY HH:MM") ? nextRound.round_date : 'TBD'})
         </Text>
       ) : (
         <Text style={[styles.nextRound, { color: roundColor }]}>No upcoming rounds</Text>

@@ -50,7 +50,7 @@ export const exportToCSV = async (): Promise<{ drivesPath: string; roundsPath: s
       rounds = rounds.concat(driveRounds.map((r) => ({ ...r, drive_id: drive.id })));
     }
     const roundsCSV = Papa.unparse(rounds);
-    
+
     // Save files to app's document directory
     const drivesPath = Directory.document + '/drives.csv';
     const roundsPath = Directory.document + '/rounds.csv';
