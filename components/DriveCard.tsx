@@ -16,6 +16,7 @@ interface DriveCardProps {
     id: number;
     company_name: string;
     role: string;
+    registration_status: string;
     ctc_stipend: string;
     status: string;
     selected: boolean;
@@ -51,7 +52,11 @@ export default function DriveCard({ drive }: DriveCardProps) {
         <View style={styles.finished}>
           <Text style={[styles.finishedText, { color: finishedColor }]}>Drive Finished</Text>
           <Text style={[styles.selectionText, { color: textColor }]}>
-            {drive.selected ? 'Selected' : 'Not Selected'}
+            {drive.registration_status === 'registered' 
+  ? drive.selected 
+    ? 'Selected' 
+    : 'Not Selected' 
+  : 'Not Registered'}
           </Text>
         </View>
       ) : nextRound ? (

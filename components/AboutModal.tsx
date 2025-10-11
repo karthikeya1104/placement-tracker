@@ -11,7 +11,7 @@ export default function AboutModal({ visible, onClose }: Props) {
   const { mode } = useThemeContext();
   const isDark = mode === "dark";
 
-  // Define theme-dependent variables at the top
+  // Theme-dependent variables
   const overlayColor = isDark ? "rgba(0,0,0,0.8)" : "rgba(0,0,0,0.6)";
   const containerBg = isDark ? "#1e1e1e" : "#fff";
   const titleColor = isDark ? "#fff" : "#000";
@@ -32,16 +32,35 @@ export default function AboutModal({ visible, onClose }: Props) {
       <View style={[styles.overlay, { backgroundColor: overlayColor }]}>
         <View style={[styles.container, { backgroundColor: containerBg }]}>
           <ScrollView>
-            <Text style={[styles.title, { color: titleColor }]}>Placement Tracker v1.1.5</Text>
-            <Text style={[styles.text, { color: textColor }]}>
-              Developed by{"\n"}Nagelli Karthikeya Goud 💙
+            <Text style={[styles.title, { color: titleColor }]}>
+              🎓 Placement Tracker <Text style={{ fontSize: 14, color: linkColor }}>v1.1.5</Text>
             </Text>
             <Text style={[styles.text, { color: textColor }]}>
-              A smart, easy-to-use app to organize, monitor, and streamline campus recruitment drives.
+              👨‍💻 Developed by{"\n"}<Text style={{ fontWeight: "bold" }}>Nagelli Karthikeya Goud</Text>
             </Text>
-            <Text style={[styles.text, { color: textColor, marginTop: 15 }]}>Contact & Links:</Text>
+            <Text style={[styles.text, { color: textColor }]}>
+              Placement Tracker is a comprehensive and user-friendly mobile application designed to help students efficiently manage and monitor their campus recruitment journey.
+              {"\n\n"}
+              The app enables you to:
+            </Text>
+            <Text style={[styles.text, { color: textColor }]}>
+              <Text>📅 </Text>Organize placement drives{"\n"}
+              <Text>📝 </Text>Track registration status{"\n"}
+              <Text>🏆 </Text>Manage interview rounds{"\n"}
+              <Text>💬 </Text>Store and parse important messages{"\n"}
+              <Text>📊 </Text>Visualize your progress with analytics
+            </Text>
+            <Text style={[styles.text, { color: textColor, marginTop: 10 }]}>
+              <Text style={{ fontWeight: "bold" }}>Key Features:</Text>
+              {"\n"}• 📂 Centralized tracking of all placement drives
+              {"\n"}• 🤖 Intelligent parsing of placement messages
+              {"\n"}• 📈 Detailed analytics and progress visualization
+              {"\n"}• 🔒 Secure, offline-first data storage
+              {"\n"}• ⚙️ Customizable settings and export/import options
+            </Text>
+            <Text style={[styles.text, { color: textColor, marginTop: 15 }]}>📬 <Text style={{ fontWeight: "bold" }}>Contact & Links:</Text></Text>
 
-            <Text style={[styles.link, { color: linkColor }]} onPress={() => handleLinkPress("mailto:temp@gmail.com")}>
+            <Text style={[styles.link, { color: linkColor }]} onPress={() => handleLinkPress("mailto:nagellikarthikeya@gmail.com")}>
               📧 nagellikarthikeya@gmail.com
             </Text>
             <Text style={[styles.link, { color: linkColor }]} onPress={() => handleLinkPress("https://nagellikarthikeya.vercel.app/")}>
@@ -51,7 +70,9 @@ export default function AboutModal({ visible, onClose }: Props) {
               🔗 LinkedIn
             </Text>
 
-            <Text style={[styles.text, { color: textColor, marginTop: 15 }]}>© 2025 All rights reserved.</Text>
+            <Text style={[styles.text, { color: textColor, marginTop: 15, textAlign: "center" }]}>
+              © 2025 Nagelli Karthikeya Goud. All rights reserved.
+            </Text>
           </ScrollView>
 
           <TouchableOpacity style={[styles.button, { backgroundColor: buttonBg }]} onPress={onClose}>
@@ -75,7 +96,7 @@ const styles = StyleSheet.create({
     padding: 20,
     maxHeight: "80%",
   },
-  title: { fontSize: 20, fontWeight: "700", marginBottom: 15 },
+  title: { fontSize: 22, fontWeight: "700", marginBottom: 15, textAlign: "center" },
   text: { fontSize: 16, lineHeight: 24, marginBottom: 8 },
   link: { fontSize: 16, lineHeight: 24, marginBottom: 5 },
   button: {

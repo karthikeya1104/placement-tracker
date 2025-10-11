@@ -16,15 +16,33 @@ export default function AnalyticsScreen() {
 
   // Pie chart dataset
   const pieData = [
-    { name: 'Upcoming', count: statusCounts.upcoming, color: '#2196F3', legendFontColor: mode === 'dark' ? '#fff' : '#000', legendFontSize: 14 },
-    { name: 'Ongoing', count: statusCounts.ongoing, color: '#FFC107', legendFontColor: mode === 'dark' ? '#fff' : '#000', legendFontSize: 14 },
-    { name: 'Finished', count: statusCounts.finished, color: '#4CAF50', legendFontColor: mode === 'dark' ? '#fff' : '#000', legendFontSize: 14 },
-  ];
+    {
+      name: 'Upcoming',
+      count: statusCounts.upcoming,
+      color: '#2196F3',
+      legendFontColor: mode === 'dark' ? '#fff' : '#222',
+      legendFontSize: 14,
+    },
+    {
+      name: 'Ongoing',
+      count: statusCounts.ongoing,
+      color: '#FFC107',
+      legendFontColor: mode === 'dark' ? '#fff' : '#222',
+      legendFontSize: 14,
+    },
+    {
+      name: 'Finished',
+      count: statusCounts.finished,
+      color: '#4CAF50',
+      legendFontColor: mode === 'dark' ? '#fff' : '#222',
+      legendFontSize: 14,
+    },
+  ].filter(item => item.count > 0); // Only show statuses with data
 
   if (!hasData) {
     return (
-      <View style={[styles.noDataContainer, { backgroundColor: mode === 'dark' ? '#121212' : '#f5f5f5' }]}>
-        <Text style={[styles.noDataText, { color: mode === 'dark' ? '#fff' : '#000' }]}>
+      <View style={[styles.noDataContainer, { backgroundColor: mode === 'dark' ? '#181818' : '#f5f5f5' }]}>
+        <Text style={[styles.noDataText, { color: mode === 'dark' ? '#fff' : '#222' }]}>
           No drive data available to display analytics.
         </Text>
       </View>
@@ -32,19 +50,30 @@ export default function AnalyticsScreen() {
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: mode === 'dark' ? '#121212' : '#f5f5f5' }]}>
-      <Text style={[styles.title, { color: mode === 'dark' ? '#fff' : '#000' }]}>📊 Registered Drives Analytics</Text>
+    <ScrollView style={[styles.container, { backgroundColor: mode === 'dark' ? '#181818' : '#f5f5f5' }]}>
+      <Text style={[styles.title, { color: mode === 'dark' ? '#fff' : '#222' }]}>
+        📊 Registered Drives Analytics
+      </Text>
 
       {/* Pie Chart */}
-      <Text style={[styles.chartTitle, { color: mode === 'dark' ? '#fff' : '#000' }]}>Registered Drives Status</Text>
+      <Text style={[styles.chartTitle, { color: mode === 'dark' ? '#fff' : '#222' }]}>
+        🥧 Registered Drives Status
+      </Text>
       <PieChart
         data={pieData}
         width={screenWidth - 32}
         height={220}
         chartConfig={{
-          backgroundGradientFrom: mode === 'dark' ? '#121212' : '#f5f5f5',
-          backgroundGradientTo: mode === 'dark' ? '#121212' : '#f5f5f5',
-          color: (opacity = 1) => `rgba(${mode === 'dark' ? '255,255,255' : '0,0,0'},${opacity})`,
+          backgroundGradientFrom: mode === 'dark' ? '#181818' : '#fff',
+          backgroundGradientTo: mode === 'dark' ? '#181818' : '#fff',
+          color: (opacity = 1) =>
+            mode === 'dark'
+              ? `rgba(255,255,255,${opacity})`
+              : `rgba(34,34,34,${opacity})`,
+          labelColor: () => (mode === 'dark' ? '#fff' : '#222'),
+          propsForLabels: {
+            fontWeight: 'bold',
+          },
         }}
         accessor="count"
         backgroundColor="transparent"
@@ -53,26 +82,45 @@ export default function AnalyticsScreen() {
       />
 
       {/* Timeline Chart */}
-      <Text style={[styles.chartTitle, { color: mode === 'dark' ? '#fff' : '#000' }]}>Registered Drives Timeline</Text>
+      <Text style={[styles.chartTitle, { color: mode === 'dark' ? '#fff' : '#222' }]}>
+        📈 Registered Drives Timeline
+      </Text>
       <LineChart
         data={{
           labels: lineChartData.labels,
           datasets: [
-            { data: lineChartData.added, color: () => '#2196F3', strokeWidth: 2, label: 'Added' },
-            { data: lineChartData.finished, color: () => '#4CAF50', strokeWidth: 2, label: 'Finished' },
+            {
+              data: lineChartData.added,
+              color: () => '#2196F3',
+              strokeWidth: 2,
+            },
+            {
+              data: lineChartData.finished,
+              color: () => '#4CAF50',
+              strokeWidth: 2,
+            },
           ],
           legend: ['Added', 'Finished'],
         }}
         width={screenWidth - 32}
-        height={280}
+        height={260}
         chartConfig={{
-          backgroundGradientFrom: mode === 'dark' ? '#121212' : '#f5f5f5',
-          backgroundGradientTo: mode === 'dark' ? '#121212' : '#f5f5f5',
-          color: (opacity = 1) => `rgba(${mode === 'dark' ? '255,255,255' : '0,0,0'},${opacity})`,
-          labelColor: () => (mode === 'dark' ? '#fff' : '#000'),
+          backgroundGradientFrom: mode === 'dark' ? '#181818' : '#fff',
+          backgroundGradientTo: mode === 'dark' ? '#181818' : '#fff',
+          color: (opacity = 1) =>
+            mode === 'dark'
+              ? `rgba(255,255,255,${opacity})`
+              : `rgba(34,34,34,${opacity})`,
+          labelColor: () => (mode === 'dark' ? '#fff' : '#222'),
           decimalPlaces: 0,
+          propsForDots: {
+            r: '5',
+            strokeWidth: '2',
+            stroke: mode === 'dark' ? '#fff' : '#222',
+          },
         }}
-        style={{ marginVertical: 12 }}
+        style={{ marginVertical: 12, borderRadius: 12 }}
+        bezier
       />
     </ScrollView>
   );
