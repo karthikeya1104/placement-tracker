@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, FlatList, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, FlatList, Text, StyleSheet, TextInput } from 'react-native';
+import { Ionicons } from '@expo/vector-icons'; 
 import DriveCard from '../components/DriveCard';
 import { useDrives } from '../context/DrivesContext';
 import { useThemeContext } from '../context/ThemeContext';
@@ -7,11 +8,14 @@ import { useThemeContext } from '../context/ThemeContext';
 export default function HomeScreen() {
   const { drives } = useDrives();
   const { mode } = useThemeContext();
+  const [search, setSearch] = useState('');
 
+  // Filter drives based on status, registration, and search query
   const upcoming = drives.filter(
     d =>
       (d.status === 'upcoming' || d.status === 'ongoing') &&
-      d.registration_status === 'registered'
+      d.registration_status === 'registered' &&
+      (d.company_name || '').toLowerCase().includes(search.toLowerCase().trim())
   );
 
   return (
@@ -21,6 +25,18 @@ export default function HomeScreen() {
         { backgroundColor: mode === 'dark' ? '#121212' : '#fff' },
       ]}
     >
+      {/* Search Bar */}
+      <View style={[styles.searchContainer, { backgroundColor: mode === 'dark' ? '#333' : '#f0f0f0' }]}>
+        <Ionicons name="search" size={20} color={mode === 'dark' ? '#fff' : '#888'} style={{ marginRight: 8 }} />
+        <TextInput
+          style={[styles.searchInput, { color: mode === 'dark' ? '#fff' : '#000' }]}
+          placeholder="Search by company"
+          placeholderTextColor={mode === 'dark' ? '#aaa' : '#888'}
+          value={search}
+          onChangeText={setSearch}
+        />
+      </View>
+
       {upcoming.length === 0 ? (
         <Text style={[styles.empty, { color: mode === 'dark' ? '#fff' : '#000' }]}>
           No upcoming drives.
@@ -40,5 +56,19 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 10 },
+  
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    marginBottom: 10,
+  },
+  
+  searchInput: {
+    flex: 1,
+    height: 40,
+  },
+  
   empty: { textAlign: 'center', marginTop: 20, fontSize: 16 },
 });

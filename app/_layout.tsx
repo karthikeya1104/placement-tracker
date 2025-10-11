@@ -1,13 +1,22 @@
-// app/_layout.tsx
-import React from 'react';
-import { StatusBar } from 'react-native';
+import React, { useEffect } from 'react';
+import { StatusBar, Platform } from 'react-native';
 import { DrivesProvider } from '../context/DrivesContext';
 import BottomTabs from '../navigation/BottomTabs';
 import { ThemeProvider, useThemeContext } from '../context/ThemeContext';
+import * as NavigationBar from 'expo-navigation-bar';
 
-// Wrapper component to handle StatusBar based on theme
 function ThemeStatusWrapper({ children }: { children: React.ReactNode }) {
   const { mode } = useThemeContext();
+
+  useEffect(() => {
+    const isDark = mode === 'dark';
+
+    StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content');
+    if (Platform.OS === 'android') {
+      NavigationBar.setBackgroundColorAsync(isDark ? '#1e1e1e' : '#fff');
+      NavigationBar.setButtonStyleAsync(isDark ? 'light' : 'dark');
+    }
+  }, [mode]);
 
   return (
     <>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, ScrollView, StyleSheet, Alert } from "react-native";
+import { View, ScrollView, StyleSheet } from "react-native";
 import { useDrives } from "../context/DrivesContext";
 import DriveTabs from "../components/DriveTabs";
 import DriveDetails from "../components/DriveDetails";
@@ -7,10 +7,19 @@ import DriveRounds from "../components/DriveRounds";
 import DriveMessages from "../components/DriveMessages";
 import { DEFAULT_DRIVE_FIELD, DEFAULT_ROUND } from "../utils/utils";
 import { useThemeContext } from "../context/ThemeContext";
+import CustomAlertModal from "../components/CustomAlertModal";
 
 export default function DriveDetailScreen({ route, navigation }: any) {
   const { drive } = route.params;
-  const { drives, updateDriveInState, addRoundToDrive, updateRoundInDrive, removeRoundFromDrive, deleteDriveInState } = useDrives();
+  const {
+    drives,
+    updateDriveInState,
+    addRoundToDrive,
+    updateRoundInDrive,
+    removeRoundFromDrive,
+    deleteDriveInState,
+  } = useDrives();
+
   const { mode } = useThemeContext();
 
   const [activeTab, setActiveTab] = useState<"details" | "rounds" | "messages">("details");
@@ -21,6 +30,15 @@ export default function DriveDetailScreen({ route, navigation }: any) {
   const [editingRoundId, setEditingRoundId] = useState<number | null>(null);
   const [newRound, setNewRound] = useState<any>(null);
 
+  // Custom Alert Modal State
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertPrimaryLabel, setAlertPrimaryLabel] = useState("OK");
+  const [alertSecondaryLabel, setAlertSecondaryLabel] = useState<string | undefined>();
+  const [onAlertPrimary, setOnAlertPrimary] = useState<() => void>(() => {});
+  const [onAlertSecondary, setOnAlertSecondary] = useState<() => void>(() => {});
+
   useEffect(() => {
     const currentDrive = drives.find((d) => d.id === drive.id);
     if (currentDrive) {
@@ -30,7 +48,29 @@ export default function DriveDetailScreen({ route, navigation }: any) {
     }
   }, [drives, drive.id]);
 
-  // ---------------- Handlers ----------------
+  // ----------------- Helper Functions -----------------
+  const showModal = (
+    title: string,
+    message: string,
+    primaryLabel = "OK",
+    onPrimaryAction: () => void,
+    secondaryLabel?: string,
+    onSecondaryAction?: () => void
+  ) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertPrimaryLabel(primaryLabel);
+    setAlertSecondaryLabel(secondaryLabel);
+    setOnAlertPrimary(() => onPrimaryAction);
+    setOnAlertSecondary(() => onSecondaryAction || (() => setAlertVisible(false)));
+    setAlertVisible(true);
+  };
+
+  const showErrorModal = (message: string) => {
+    showModal("Error", message, "OK", () => setAlertVisible(false));
+  };
+
+  // ----------------- Drive Handlers -----------------
   const handleSaveDrive = async () => {
     try {
       const { rounds, raw_messages, queued_for_retry, parse_status, ...dbFields } = editableDrive;
@@ -50,16 +90,16 @@ export default function DriveDetailScreen({ route, navigation }: any) {
       const success = await updateDriveInState(drive.id, updated);
 
       if (success) {
-        Alert.alert("Success", "Drive details saved!");
         setEditableDrive({ ...editableDrive, ...updated });
         setOriginalDrive({ ...editableDrive, ...updated });
         setIsEditing(false);
+        showModal("Success", "Drive details saved!", "OK", () => setAlertVisible(false));
       } else {
-        Alert.alert("Error", "Failed to save drive.");
+        showErrorModal("Failed to save drive.");
       }
     } catch (error) {
       console.error("Update drive error:", error);
-      Alert.alert("Error", "Failed to save drive.");
+      showErrorModal("Failed to save drive.");
     }
   };
 
@@ -68,45 +108,48 @@ export default function DriveDetailScreen({ route, navigation }: any) {
     setIsEditing(false);
   };
 
-  const handleDeleteDrive = async () => {
-    Alert.alert("Delete Drive", "Are you sure you want to delete this drive?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          const success = await deleteDriveInState(drive.id);
-          if (success) {
-            Alert.alert("Deleted", "Drive deleted successfully!");
+  const handleDeleteDrive = () => {
+    showModal(
+      "Delete Drive",
+      "Are you sure you want to delete this drive?",
+      "Delete",
+      async () => {
+        setAlertVisible(false);
+        const success = await deleteDriveInState(drive.id);
+        if (success) {
+          showModal("Deleted", "Drive deleted successfully!", "OK", () => {
+            setAlertVisible(false);
             navigation.goBack();
-          } else {
-            Alert.alert("Error", "Failed to delete drive.");
-          }
-        },
+          });
+        } else {
+          showErrorModal("Failed to delete drive.");
+        }
       },
-    ]);
+      "Cancel",
+      () => setAlertVisible(false)
+    );
   };
 
-  // Rounds handlers remain same
+  // ----------------- Round Handlers -----------------
   const handleAddNewRound = () => setNewRound({ round_name: "", round_date: "", status: "upcoming", result: "not_conducted" });
   const handleCancelNewRound = () => setNewRound(null);
 
   const handleSaveNewRound = async (round: any) => {
     if (!round) return null;
 
-    // Default values
     if (!round.round_name?.trim()) round.round_name = DEFAULT_ROUND.round_name;
     if (!round.round_date?.trim()) round.round_date = DEFAULT_ROUND.round_date;
 
-    const id = await addRoundToDrive(drive.id, round); // should return saved round with id
+    const id = await addRoundToDrive(drive.id, round);
 
     if (id !== -1) {
-      const savedRound = { ...round, id }
-      setEditableRounds(prev => [...prev.filter(r => r !== round), savedRound]); // replace temp round with saved one
+      const savedRound = { ...round, id };
+      setEditableRounds((prev) => [...prev.filter((r) => r !== round), savedRound]);
       setNewRound(null);
       return savedRound;
     }
 
+    showErrorModal("Failed to save round.");
     return null;
   };
 
@@ -118,36 +161,29 @@ export default function DriveDetailScreen({ route, navigation }: any) {
       round_date: updatedRound.round_date?.trim() || DEFAULT_ROUND.round_date,
       status: updatedRound.status || DEFAULT_ROUND.status,
       result: updatedRound.result || DEFAULT_ROUND.result,
-      round_number: updatedRound.round_number, // include round_number
+      round_number: updatedRound.round_number,
     };
 
     const success = await updateRoundInDrive(drive.id, updatedRound.id, updates);
 
     if (success) {
-      // Update local state to reflect backend changes
-      setEditableRounds(prev =>
-        prev.map(r => (r.id === updatedRound.id ? { ...r, ...updates } : r))
-      );
+      setEditableRounds((prev) => prev.map((r) => (r.id === updatedRound.id ? { ...r, ...updates } : r)));
       setEditingRoundId(null);
       return true;
     }
 
+    showErrorModal("Failed to save round.");
     return false;
   };
 
   const handleDeleteRound = async (roundId: number) => {
-    Alert.alert("Delete Round", "Are you sure you want to delete this round?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          const success = await removeRoundFromDrive(drive.id, roundId);
-          if (success) Alert.alert("Deleted", "Round deleted successfully!");
-          setEditingRoundId(null);
-        },
-      },
-    ]);
+    try {
+      const success = await removeRoundFromDrive(drive.id, roundId);
+      return success;
+    } catch (err) {
+      console.error("Delete round error:", err);
+      return false;
+    }
   };
 
   return (
@@ -164,7 +200,6 @@ export default function DriveDetailScreen({ route, navigation }: any) {
             handleSaveDrive={handleSaveDrive}
             handleCancelDrive={handleCancelDrive}
             handleDeleteDrive={handleDeleteDrive}
-            darkMode={mode === "dark"} // optionally pass to child components
           />
         )}
 
@@ -181,12 +216,21 @@ export default function DriveDetailScreen({ route, navigation }: any) {
             handleCancelNewRound={handleCancelNewRound}
             handleSaveRound={handleSaveRound}
             handleDeleteRound={handleDeleteRound}
-            darkMode={mode === "dark"}
           />
         )}
 
         {activeTab === "messages" && <DriveMessages rawMessages={drive.raw_messages} darkMode={mode === "dark"} />}
       </ScrollView>
+
+      <CustomAlertModal
+        visible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        primaryLabel={alertPrimaryLabel}
+        secondaryLabel={alertSecondaryLabel}
+        onPrimary={onAlertPrimary}
+        onSecondary={onAlertSecondary}
+      />
     </View>
   );
 }

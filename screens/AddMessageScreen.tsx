@@ -41,6 +41,19 @@ export default function AddMessageScreen() {
   const activeDrives = drives.filter(d => d.status !== 'finished');
   const navigation = useNavigation();
 
+  const getErrorMessage = (errorMsg?: string) => {
+    switch (errorMsg) {
+      case 'INVALID_API_KEY':
+        return { title: 'Invalid API Key', message: 'Your Gemini API key is invalid. Please update it in settings.' };
+      case 'NETWORK_ERROR':
+        return { title: 'Network Error', message: 'Unable to reach the server. Check your internet connection.' };
+      case 'SERVER_OVERLOADED':
+        return { title: 'Server Busy', message: 'Gemini servers are currently overloaded. Please try again later.' };
+      default:
+        return { title: 'Error', message: errorMsg || 'Drive saved locally and queued to parse later.' };
+    }
+  };
+
   const handleSave = async () => {
     if (!rawMessage.trim()) {
       setAlertTitle('Validation Error');
@@ -56,6 +69,7 @@ export default function AddMessageScreen() {
     }
 
     setLoading(true);
+
     try {
       let result: any;
 
@@ -74,24 +88,32 @@ export default function AddMessageScreen() {
       if (result?.success) {
         setAlertTitle('Success');
         setAlertMessage('Drive saved successfully.');
+      } else if (result?.error) {
+        const { title, message } = getErrorMessage(result.error);
+        setAlertTitle(title);
+        setAlertMessage(message);
       } else {
-        // Queue scenario, API/network failure, invalid key
-        setAlertTitle('Notice');
-        setAlertMessage(result?.error || 'Drive saved locally and queued to parse later.');
+        const { title, message } = getErrorMessage();
+        setAlertTitle(title);
+        setAlertMessage(message);
       }
 
       setShowResultAlert(true);
-
+      
       // Reset inputs
       setRawMessage('');
       setSelectedDrive(null);
       setLocalMode('new');
       setRegistrationStatus('registered');
       refreshDrives();
+
     } catch (error: any) {
-      console.error(error);
-      setAlertTitle('Error');
-      setAlertMessage(error?.message || 'Failed to save message.');
+      console.error('Error saving drive:', error);
+
+      const { title, message } = getErrorMessage(error?.message);
+
+      setAlertTitle(title);
+      setAlertMessage(message);
       setShowResultAlert(true);
     } finally {
       setLoading(false);

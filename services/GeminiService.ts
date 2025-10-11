@@ -96,15 +96,27 @@ class GeminiService {
    * Shared Gemini API call
    */
   private static async callGemini(apiKey: string, prompt: string): Promise<ParsedDriveData> {
-    const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
-    const response = await fetch(ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-    });
+    let response: Response;
 
-    if (!response.ok) throw new Error(`Gemini API error: ${response.status}`);
+    try {
+      response = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+      });
+    } catch (networkErr: any) {
+      // Network-level errors (no internet, DNS fail, etc)
+      throw new Error('NETWORK_ERROR');
+    }
+
+    if (!response.ok) {
+      // Handle HTTP status codes explicitly
+      if (response.status === 400) throw new Error('INVALID_API_KEY');
+      if (response.status === 503) throw new Error('SERVER_OVERLOADED');
+      throw new Error('GENERIC_ERROR'); // fallback for other HTTP errors
+    }
 
     const data = await response.json();
     let textOutput = '';
@@ -134,7 +146,7 @@ class GeminiService {
       return parsed;
     } catch (err) {
       console.error('Failed to parse Gemini JSON:', textOutput);
-      throw new Error('Invalid JSON returned from Gemini API');
+      throw new Error('GENERIC_ERROR');
     }
   }
 }

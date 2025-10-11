@@ -110,16 +110,7 @@ class DriveService {
       }
     } catch (err: any) {
       await updateDrive(driveId, { queued_for_retry: 1 });
-
-      if (err.message.includes('API key')) {
-        throw new Error(
-          'Invalid Gemini API key. Drive saved locally and queued to parse. Please update your key.'
-        );
-      } else {
-        throw new Error(
-          'Network or service issue: Drive saved locally and queued to parse later.'
-        );
-      }
+      throw err;
     }
   }
 

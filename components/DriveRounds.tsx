@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, TextInput, TouchableOpacity, Text, StyleSheet } from "react-native";
+import { View, TextInput, TouchableOpacity, Text, StyleSheet, ActivityIndicator  } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { DEFAULT_ROUND } from "../utils/utils";
 import { useThemeContext } from "../context/ThemeContext";
@@ -44,6 +44,7 @@ export default function DriveRounds(props: Props) {
 
   const [alertVisible, setAlertVisible] = React.useState(false);
   const [alertMessage, setAlertMessage] = React.useState('');
+  const [loading, setLoading] = useState(false);
 
   /** Start editing a round */
   const startEditing = (round: any) => {
@@ -82,6 +83,8 @@ export default function DriveRounds(props: Props) {
   const saveNewRoundWithInsert = async () => {
     if (!newRound) return;
 
+    setLoading(true);
+    
     const newRoundObj: Partial<Round> = {
       ...newRound,
       round_number: Number(newRound.round_number) || editableRounds.length + 1,
@@ -104,6 +107,7 @@ export default function DriveRounds(props: Props) {
 
     setEditableRounds(finalRounds);
     setNewRound(null);
+    setLoading(false);
 
     // Show alert
     setAlertMessage('New round has been saved successfully!');
@@ -114,6 +118,8 @@ export default function DriveRounds(props: Props) {
   const saveEditingWithShift = async () => {
     if (!editingRoundCopy) return;
 
+    setLoading(true);
+    
     const otherRounds = editableRounds.filter(r => r.id !== editingRoundCopy.id);
     const updatedRounds = normalizeAndPrioritizeRounds([...otherRounds, editingRoundCopy], editingRoundCopy);
 
@@ -131,12 +137,40 @@ export default function DriveRounds(props: Props) {
     setEditingRoundId(null);
 
     // Show alert
+    setLoading(false);
     setAlertMessage('Round edits have been saved successfully!');
     setAlertVisible(true);
   };
 
+  const deleteRoundWithReorder = async (id: number) => {
+    setLoading(true);
+
+    const success = await handleDeleteRound(id);
+    if (success) {
+      // Remove the deleted round
+      let remainingRounds = editableRounds.filter((r) => r.id !== id);
+      remainingRounds = normalizeAndPrioritizeRounds(remainingRounds);
+      // Save all rounds sequentially
+      for (const round of remainingRounds) {
+        await handleSaveRound(round);
+      }
+      setEditableRounds(remainingRounds);
+      setEditingRoundId(null);
+      setAlertMessage("Round deleted successfully!");
+      setAlertVisible(true);
+    } else {
+      setAlertMessage("Failed to delete round.");
+      setAlertVisible(true);
+    }
+
+    setLoading(false);
+  };
+
   return (
     <View>
+
+      {loading && <ActivityIndicator size="large" color="#6200ee" style={{ marginVertical: 10 }} />}
+
       {/* Add New Round Button */}
       {!newRound && (
         <TouchableOpacity
@@ -303,7 +337,7 @@ export default function DriveRounds(props: Props) {
 
                 <TouchableOpacity
                   style={[styles.curvedButton, { backgroundColor: "red" }]}
-                  onPress={() => handleDeleteRound(round.id)}
+                  onPress={() => deleteRoundWithReorder(round.id)}
                 >
                   <Text style={styles.curvedButtonText}>Delete</Text>
                 </TouchableOpacity>
