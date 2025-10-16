@@ -13,7 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useThemeContext } from '../context/ThemeContext';
-
+import CustomAlertModal from '@/components/CustomAlertModal';
 const KEY = 'GEMINI_API_KEY';
 
 // Utility to check if SecureStore is available
@@ -62,6 +62,11 @@ export default function SetupApiKeyScreen() {
   const [keyLoaded, setKeyLoaded] = useState(false);
   const [editing, setEditing] = useState(false);
 
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [onAlertPrimary, setOnAlertPrimary] = useState<() => void>(() => {});
+
   const bgColor = mode === 'dark' ? '#121212' : '#fff';
   const textColor = mode === 'dark' ? '#fff' : '#222';
   const subTextColor = mode === 'dark' ? '#aaa' : '#555';
@@ -83,7 +88,7 @@ export default function SetupApiKeyScreen() {
 
   const handleSave = async () => {
     if (!apiKey.trim()) {
-      alert('Please enter a valid Gemini API key.');
+      showCustomAlert('Invalid Key', 'Please enter a valid Gemini API key.');
       return;
     }
 
@@ -93,14 +98,25 @@ export default function SetupApiKeyScreen() {
       await ApiKeyService.saveKey(apiKey.trim());
       setOriginalKey(apiKey.trim());
       setEditing(false);
-      alert('API key saved successfully!');
+      showCustomAlert('Saved', 'API key saved successfully!');
       
     } catch (error: any) {
       console.error('Error saving API key:', error);
-      alert('Failed to save API key. Please try again.');
+      showCustomAlert('Error', 'Failed to save API key. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const showCustomAlert = (
+    title: string,
+    message: string,
+    onPrimary: () => void = () => setAlertVisible(false)
+  ) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setOnAlertPrimary(() => onPrimary);
+    setAlertVisible(true);
   };
 
   const handleCancelEdit = () => {
@@ -116,7 +132,7 @@ export default function SetupApiKeyScreen() {
       setEditing(false);
     } catch (err) {
       console.error('Failed to remove API key:', err);
-      alert('Failed to remove API key.');
+      showCustomAlert('Error', 'Failed to remove API key.');
     }
   };
 
@@ -203,6 +219,14 @@ export default function SetupApiKeyScreen() {
           </>
         )}
       </View>
+      <CustomAlertModal
+        visible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        primaryLabel="OK"
+        onPrimary={() => setAlertVisible(false)}
+        onClose={() => setAlertVisible(false)} // closes when tapping outside
+      />
     </KeyboardAvoidingView>
   );
 }

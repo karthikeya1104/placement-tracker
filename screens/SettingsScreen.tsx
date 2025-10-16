@@ -68,6 +68,7 @@ export default function SettingsScreen() {
   // Export CSV
   const handleExportCSV = () => {
     const fileName = generateCSVFileName();
+
     showCustomAlert(
       'Export CSV',
       'Do you want to Share the CSV file or Save it to Downloads?',
@@ -80,11 +81,14 @@ export default function SettingsScreen() {
             showCustomAlert('Success', 'CSV shared successfully!');
           } else if (choice === 'save') {
             await exportToCSV(fileName, { mode: 'save-only' });
-            showCustomAlert('Success', 'CSV saved to Downloads!');
+            
+            showCustomAlert('Saved', 'CSV saved to Downloads!');
           }
         } catch (error) {
+          console.error(error);
           showCustomAlert('Error', 'Failed to export CSV.');
         }
+
         setAlertVisible(false);
       }
     );
@@ -187,6 +191,7 @@ export default function SettingsScreen() {
         secondaryValue="save"
         onPrimary={onAlertPrimary}
         onSecondary={onAlertPrimary}
+        onClose={() => setAlertVisible(false)}
       />
     </View>
   );

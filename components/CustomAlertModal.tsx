@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { useThemeContext } from '../context/ThemeContext';
 
 interface Props {
@@ -8,10 +8,11 @@ interface Props {
   message: string;
   primaryLabel?: string;
   secondaryLabel?: string;
-  onPrimary?: (value?: any) => void;    // <-- enhanced
-  onSecondary?: (value?: any) => void;  // <-- enhanced
-  primaryValue?: any;                   // optional value returned on primary press
-  secondaryValue?: any;                 // optional value returned on secondary press
+  onPrimary?: (value?: any) => void;
+  onSecondary?: (value?: any) => void;
+  primaryValue?: any;
+  secondaryValue?: any;
+  onClose?: () => void;
 }
 
 export default function CustomAlertModal({
@@ -24,6 +25,7 @@ export default function CustomAlertModal({
   onSecondary,
   primaryValue,
   secondaryValue,
+  onClose,
 }: Props) {
   const { mode } = useThemeContext();
 
@@ -37,45 +39,42 @@ export default function CustomAlertModal({
   const secondaryText = mode === 'dark' ? '#ccc' : '#333';
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={() => {
-        if (onSecondary) onSecondary(secondaryValue);
-        else if (onPrimary) onPrimary(primaryValue);
-      }}
-    >
-      <View style={styles.backdrop}>
-        <View style={[styles.container, { backgroundColor: bgColor }]}>
-          <Text style={[styles.title, { color: titleColor }]}>{title}</Text>
-          <Text style={[styles.message, { color: messageColor }]}>{message}</Text>
+    <Modal visible={visible} transparent animationType="fade">
+      <TouchableWithoutFeedback onPress={onClose}>
+        <View style={styles.backdrop}>
+          {/* Prevent inner touches from triggering backdrop press */}
+          <TouchableWithoutFeedback>
+            <View style={[styles.container, { backgroundColor: bgColor }]}>
+              <Text style={[styles.title, { color: titleColor }]}>{title}</Text>
+              <Text style={[styles.message, { color: messageColor }]}>{message}</Text>
 
-          <View style={styles.buttonRow}>
-            {secondaryLabel && onSecondary && (
-              <TouchableOpacity
-                style={[styles.button, { backgroundColor: secondaryBg }]}
-                onPress={() => onSecondary(secondaryValue)}
-              >
-                <Text style={[styles.secondaryText, { color: secondaryText }]}>
-                  {secondaryLabel}
-                </Text>
-              </TouchableOpacity>
-            )}
+              <View style={styles.buttonRow}>
+                {secondaryLabel && onSecondary && (
+                  <TouchableOpacity
+                    style={[styles.button, { backgroundColor: secondaryBg }]}
+                    onPress={() => onSecondary(secondaryValue)}
+                  >
+                    <Text style={[styles.secondaryText, { color: secondaryText }]}>
+                      {secondaryLabel}
+                    </Text>
+                  </TouchableOpacity>
+                )}
 
-            {onPrimary && (
-              <TouchableOpacity
-                style={[styles.button, { backgroundColor: primaryBg }]}
-                onPress={() => onPrimary(primaryValue)}
-              >
-                <Text style={[styles.primaryText, { color: primaryText }]}>
-                  {primaryLabel}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
+                {onPrimary && (
+                  <TouchableOpacity
+                    style={[styles.button, { backgroundColor: primaryBg }]}
+                    onPress={() => onPrimary(primaryValue)}
+                  >
+                    <Text style={[styles.primaryText, { color: primaryText }]}>
+                      {primaryLabel}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }
@@ -116,12 +115,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     marginTop: 5,
   },
-  primaryText: {
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  secondaryText: {
-    fontWeight: '500',
-    textAlign: 'center',
-  },
+  primaryText: { fontWeight: '600', textAlign: 'center' },
+  secondaryText: { fontWeight: '500', textAlign: 'center' },
 });
