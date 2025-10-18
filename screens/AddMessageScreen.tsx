@@ -32,6 +32,7 @@ export default function AddMessageScreen() {
 
   // Custom alert for API key missing
   const [showKeyAlert, setShowKeyAlert] = useState(false);
+  const [inputHeight, setInputHeight] = useState(140);
 
   // Custom alert for operation result (success/error)
   const [showResultAlert, setShowResultAlert] = useState(false);
@@ -101,6 +102,7 @@ export default function AddMessageScreen() {
       setShowResultAlert(true);
       
       // Reset inputs
+      setInputHeight(140);
       setRawMessage('');
       setSelectedDrive(null);
       setLocalMode('new');
@@ -135,6 +137,7 @@ export default function AddMessageScreen() {
         <ScrollView
           contentContainerStyle={[styles.container, { backgroundColor }]}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           <Text style={[styles.label, { color: textColor }]}>Choose Action:</Text>
           <View style={styles.toggleContainer}>
@@ -214,12 +217,15 @@ export default function AddMessageScreen() {
           )}
 
           <TextInput
-            style={[styles.input, { backgroundColor: cardBackground, borderColor, color: textColor, height: 140, textAlignVertical: 'top' }]}
+            style={[styles.input, { backgroundColor: cardBackground, borderColor, color: textColor, height: inputHeight, textAlignVertical: 'top' }]}
             placeholder="Paste raw message here..."
             placeholderTextColor={mode === 'dark' ? '#888' : '#888'}
             multiline
             value={rawMessage}
             onChangeText={setRawMessage}
+            onContentSizeChange={(e) =>
+              setInputHeight(Math.max(140, e.nativeEvent.contentSize.height))
+            }
           />
 
           <TouchableOpacity style={[styles.saveButton, { backgroundColor: '#007bff' }]} onPress={handleSave} disabled={loading}>

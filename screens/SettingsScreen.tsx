@@ -107,7 +107,7 @@ export default function SettingsScreen() {
 
   return (
     <View style={[styles.container, mode === 'dark' && { backgroundColor: '#121212' }]}>
-      <ScrollView>
+      <ScrollView showsVerticalScrollIndicator={false}>
         <Text style={[styles.title, mode === 'dark' && { color: '#fff' }]}>Settings</Text>
 
         <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('SetupApiKey')}>

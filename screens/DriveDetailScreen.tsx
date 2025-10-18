@@ -189,7 +189,7 @@ export default function DriveDetailScreen({ route, navigation }: any) {
   return (
     <View style={[styles.container, { backgroundColor: mode === "dark" ? "#121212" : "#f5f5f5" }]}>
       <DriveTabs activeTab={activeTab} setActiveTab={setActiveTab} />
-      <ScrollView contentContainerStyle={[styles.scroll, { backgroundColor: mode === "dark" ? "#121212" : "#f5f5f5" }]}>
+      <ScrollView contentContainerStyle={[styles.scroll, { backgroundColor: mode === "dark" ? "#121212" : "#f5f5f5" }]} showsVerticalScrollIndicator={false}>
         {activeTab === "details" && (
           <DriveDetails
             editableDrive={editableDrive}

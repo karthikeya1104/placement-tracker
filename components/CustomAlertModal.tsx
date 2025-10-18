@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, TouchableWithoutFeedback, Linking } from 'react-native';
 import { useThemeContext } from '../context/ThemeContext';
 
 interface Props {
@@ -13,6 +13,8 @@ interface Props {
   primaryValue?: any;
   secondaryValue?: any;
   onClose?: () => void;
+  linkUrl?: string; // Optional URL to make part of the message clickable
+  linkText?: string; // Optional clickable text
 }
 
 export default function CustomAlertModal({
@@ -26,6 +28,8 @@ export default function CustomAlertModal({
   primaryValue,
   secondaryValue,
   onClose,
+  linkUrl,
+  linkText,
 }: Props) {
   const { mode } = useThemeContext();
 
@@ -37,6 +41,13 @@ export default function CustomAlertModal({
   const primaryText = '#fff';
   const secondaryBg = mode === 'dark' ? '#333' : '#eee';
   const secondaryText = mode === 'dark' ? '#ccc' : '#333';
+  const linkColor = '#1e90ff';
+
+  const handleLinkPress = () => {
+    if (linkUrl) {
+      Linking.openURL(linkUrl).catch(err => console.error('Failed to open URL:', err));
+    }
+  };
 
   return (
     <Modal visible={visible} transparent animationType="fade">
@@ -46,7 +57,15 @@ export default function CustomAlertModal({
           <TouchableWithoutFeedback>
             <View style={[styles.container, { backgroundColor: bgColor }]}>
               <Text style={[styles.title, { color: titleColor }]}>{title}</Text>
-              <Text style={[styles.message, { color: messageColor }]}>{message}</Text>
+
+              <Text style={[styles.message, { color: messageColor }]}>
+                {message}
+                {linkUrl && linkText && (
+                  <Text style={{ color: linkColor, textDecorationLine: 'underline' }} onPress={handleLinkPress}>
+                    {` ${linkText}`}
+                  </Text>
+                )}
+              </Text>
 
               <View style={styles.buttonRow}>
                 {secondaryLabel && onSecondary && (
@@ -65,9 +84,7 @@ export default function CustomAlertModal({
                     style={[styles.button, { backgroundColor: primaryBg }]}
                     onPress={() => onPrimary(primaryValue)}
                   >
-                    <Text style={[styles.primaryText, { color: primaryText }]}>
-                      {primaryLabel}
-                    </Text>
+                    <Text style={[styles.primaryText, { color: primaryText }]}>{primaryLabel}</Text>
                   </TouchableOpacity>
                 )}
               </View>

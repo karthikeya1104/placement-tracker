@@ -31,9 +31,9 @@ export default function AboutModal({ visible, onClose }: Props) {
     <Modal transparent animationType="fade" visible={visible}>
       <View style={[styles.overlay, { backgroundColor: overlayColor }]}>
         <View style={[styles.container, { backgroundColor: containerBg }]}>
-          <ScrollView>
+          <ScrollView showsVerticalScrollIndicator={false}>
             <Text style={[styles.title, { color: titleColor }]}>
-              🎓 Placement Tracker <Text style={{ fontSize: 14, color: linkColor }}>v1.1.6</Text>
+              🎓 Placement Tracker <Text style={{ fontSize: 14, color: linkColor }}>v1.1.7</Text>
             </Text>
             <Text style={[styles.text, { color: textColor }]}>
               👨‍💻 Developed by{"\n"}<Text style={{ fontWeight: "bold" }}>Nagelli Karthikeya Goud</Text>

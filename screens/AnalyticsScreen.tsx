@@ -65,7 +65,7 @@ export default function AnalyticsScreen() {
   ].filter(d => d.count > 0);
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: bgColor }]}>
+    <ScrollView style={[styles.container, { backgroundColor: bgColor }]} showsVerticalScrollIndicator={false}>
       {/* Registered Drives Status */}
       <Text style={[styles.title, { color: textColor }]}>📊 Registered Drives Status</Text>
       <PieChart

@@ -8,12 +8,15 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
+  Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useThemeContext } from '../context/ThemeContext';
 import CustomAlertModal from '@/components/CustomAlertModal';
+
 const KEY = 'GEMINI_API_KEY';
 
 // Utility to check if SecureStore is available
@@ -65,6 +68,8 @@ export default function SetupApiKeyScreen() {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
+  const [alertLinkUrl, setAlertLinkUrl] = useState<string | undefined>();
+  const [alertLinkText, setAlertLinkText] = useState<string | undefined>();
   const [onAlertPrimary, setOnAlertPrimary] = useState<() => void>(() => {});
 
   const bgColor = mode === 'dark' ? '#121212' : '#fff';
@@ -99,7 +104,6 @@ export default function SetupApiKeyScreen() {
       setOriginalKey(apiKey.trim());
       setEditing(false);
       showCustomAlert('Saved', 'API key saved successfully!');
-      
     } catch (error: any) {
       console.error('Error saving API key:', error);
       showCustomAlert('Error', 'Failed to save API key. Please try again.');
@@ -111,10 +115,14 @@ export default function SetupApiKeyScreen() {
   const showCustomAlert = (
     title: string,
     message: string,
-    onPrimary: () => void = () => setAlertVisible(false)
+    onPrimary: () => void = () => setAlertVisible(false),
+    linkUrl?: string,
+    linkText?: string
   ) => {
     setAlertTitle(title);
     setAlertMessage(message);
+    setAlertLinkUrl(linkUrl);
+    setAlertLinkText(linkText);
     setOnAlertPrimary(() => onPrimary);
     setAlertVisible(true);
   };
@@ -136,6 +144,22 @@ export default function SetupApiKeyScreen() {
     }
   };
 
+  const handleShowApiKeySteps = () => {
+    showCustomAlert(
+      'How to get a Gemini API Key',
+      'Follow these steps to get your API key:\n\n' +
+      '1. Go to Google AI Studio.\n' +
+      '2. Sign in with your Google account.\n' +
+      '3. Navigate to "Get API key" on the left-hand menu.\n' +
+      '4. Click "Create API key in new project".\n' +
+      '5. Copy your API key and store it securely.\n\n' +
+      'Click the link below to open Google AI Studio:',
+      () => setAlertVisible(false),
+      'https://aistudio.google.com',
+      'Open Google AI Studio'
+    );
+  };
+
   if (!keyLoaded) {
     return (
       <View
@@ -154,7 +178,7 @@ export default function SetupApiKeyScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={[styles.container, { backgroundColor: bgColor }]}
     >
-      <View style={styles.body}>
+      <ScrollView contentContainerStyle={styles.body}>
         {originalKey && !editing ? (
           <View style={[styles.keyCard, { backgroundColor: inputBg }]}>
             <Text style={[styles.label, { color: subTextColor }]}>Current Gemini API Key:</Text>
@@ -198,6 +222,14 @@ export default function SetupApiKeyScreen() {
               autoCorrect={false}
             />
 
+            {!originalKey && !editing && (
+              <TouchableOpacity style={{ marginBottom: 20 }} onPress={handleShowApiKeySteps}>
+                <Text style={{ color: buttonColor, textAlign: 'center', textDecorationLine: 'underline' }}>
+                  How to get an API key?
+                </Text>
+              </TouchableOpacity>
+            )}
+
             <View style={styles.buttonRow}>
               <TouchableOpacity
                 style={[styles.curvedButton, { backgroundColor: buttonColor }, loading && { opacity: 0.6 }]}
@@ -218,14 +250,17 @@ export default function SetupApiKeyScreen() {
             </View>
           </>
         )}
-      </View>
+      </ScrollView>
+
       <CustomAlertModal
         visible={alertVisible}
         title={alertTitle}
         message={alertMessage}
         primaryLabel="OK"
-        onPrimary={() => setAlertVisible(false)}
-        onClose={() => setAlertVisible(false)} // closes when tapping outside
+        onPrimary={onAlertPrimary}
+        onClose={() => setAlertVisible(false)}
+        linkText={alertLinkText}
+        linkUrl={alertLinkUrl}
       />
     </KeyboardAvoidingView>
   );
@@ -233,22 +268,10 @@ export default function SetupApiKeyScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 50,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-  },
-  backButton: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  backText: { fontSize: 20 },
-  headerTitle: { fontSize: 16, fontWeight: '600' },
-  body: { flex: 1, justifyContent: 'center', padding: 20 },
+  body: { flexGrow: 1, justifyContent: 'center', padding: 20 },
   title: { fontSize: 22, fontWeight: '600', marginBottom: 8, textAlign: 'center' },
   subtitle: { fontSize: 14, marginBottom: 20, textAlign: 'center', lineHeight: 20 },
-  input: { borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 20, fontSize: 16 },
+  input: { borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 10, fontSize: 16 },
   keyCard: { padding: 16, borderRadius: 12, alignItems: 'center' },
   label: { fontSize: 14, marginBottom: 8 },
   keyText: { fontSize: 16, fontWeight: '600', textAlign: 'center', marginBottom: 12 },

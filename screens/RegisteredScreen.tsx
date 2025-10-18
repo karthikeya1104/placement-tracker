@@ -42,6 +42,7 @@ export default function RegisteredScreen() {
           renderItem={({ item }) => <DriveCard drive={item} />}
           initialNumToRender={10}
           windowSize={5}
+          showsVerticalScrollIndicator={false}
         />
       )}
     </View>
